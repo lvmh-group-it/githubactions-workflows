@@ -83,7 +83,6 @@ jobs:
       uses: checkmarx/kics-github-action@v1.6
       with:
         path: ${{ matrix.tf_dirs }}
-        ignore_on_exit: results
         output_path: myResults/
     - name: display kics results
       run: |
