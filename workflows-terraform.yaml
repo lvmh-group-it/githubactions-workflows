@@ -1,0 +1,90 @@
+name: "GitHub Actions terraform"
+
+on:
+  pull_request: { branches: [main] }
+  push: { branches: [main] }
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      tf_dirs: ${{ steps.tf_list.outputs.tf_dirs }}
+    env:
+      working_directory: terraform
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: list tf directories
+        id: tf_list
+        run: | 
+          dirs="$(find ${working_directory} -mindepth 1 -maxdepth 1 -type d | jq -R | jq -scM )"
+          echo "tf_dirs=${dirs}" >> $GITHUB_OUTPUT
+          echo "tf_dirs=${dirs}"
+
+  terraform-fmt:
+    runs-on: ubuntu-latest
+    needs: setup
+    env:
+      working_directory: terraform
+    strategy:
+      matrix:
+        tf_dirs: ${{fromJson(needs.setup.outputs.tf_dirs)}}
+    steps:
+      - name: install tfenv
+        run: |
+          git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
+          export PATH=$PATH:$HOME/.tfenv/bin
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: fmt
+        run: |
+          cd ${{ matrix.tf_dirs }}
+          terraform fmt --check
+
+  terraform-lint:
+    runs-on: ubuntu-latest
+    needs: setup
+    env:
+      working_directory: terraform
+    strategy:
+      matrix:
+        tf_dirs: ${{fromJson(needs.setup.outputs.tf_dirs)}}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: actions/cache@v2
+        name: Cache plugin dir
+        with:
+          path: ~/.tflint.d/plugins
+          key: tflint-${{ hashFiles('.tflint.hcl') }}
+      - uses: terraform-linters/setup-tflint@v2
+        name: Setup TFLint
+        with:
+          tflint_version: v0.38.1
+      - name: Init TFLint
+        run: |
+          tflint --init
+      - name: Run TFLint
+        run: |
+          cd ${{ matrix.tf_dirs }}
+          tflint -f compact
+
+  terraform-kics:
+    runs-on: ubuntu-latest
+    needs: setup
+    env:
+      working_directory: terraform
+    strategy:
+      matrix:
+        tf_dirs: ${{fromJson(needs.setup.outputs.tf_dirs)}}
+    steps:
+    - uses: actions/checkout@v3
+    - name: run kics Scan
+      uses: checkmarx/kics-github-action@v1.6
+      with:
+        path: ${{ matrix.tf_dirs }}
+        ignore_on_exit: results
+        output_path: myResults/
+    - name: display kics results
+      run: |
+        cat myResults/results.json
