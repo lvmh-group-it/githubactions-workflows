@@ -15,7 +15,7 @@ on:
         default: "terraform"
         type: string
         description: "Terraform working directory"
-  secrets:
+    secrets:
       infracost_api_key:
         type: string
         description: "Infracost api key"
