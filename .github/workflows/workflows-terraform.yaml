@@ -2,6 +2,10 @@ name: "GitHub Actions terraform"
 
 on:
   workflow_call:
+    inputs:
+      kics-ignore:
+        default: "false"
+        description: "ignore kics failure"
 
 jobs:
   setup:
@@ -73,6 +77,7 @@ jobs:
     needs: setup
     env:
       working_directory: terraform
+
     strategy:
       matrix:
         tf_dirs: ${{fromJson(needs.setup.outputs.tf_dirs)}}
@@ -80,9 +85,13 @@ jobs:
     - uses: actions/checkout@v3
     - name: run kics Scan
       uses: checkmarx/kics-github-action@v1.6
+      continue-on-error: ${{ inputs.kics-ignore }}
       with:
         path: ${{ matrix.tf_dirs }}
         output_path: myResults/
+        token: ${{ secrets.GITHUB_TOKEN }}
+        ignore_on_exit: results
+        enable_comments: true
     - name: display kics results
       run: |
         cat myResults/results.json
