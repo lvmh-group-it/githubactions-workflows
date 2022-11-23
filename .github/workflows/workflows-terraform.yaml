@@ -16,9 +16,9 @@ on:
         type: string
         description: "Terraform working directory"
       infracost_api_key:
-        default: ${{ secrets.INFRACOST_API_KEY }}
         type: string
         description: "Infracost api key"
+        required: true
 
 jobs:
   setup:
