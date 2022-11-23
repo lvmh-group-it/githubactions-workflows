@@ -143,6 +143,7 @@ jobs:
         run: |
           git config \
             --global url."https://${LVMH_GITHUB_TOKEN}@github.com".insteadOf https://github.com
+          cat ~/.gitconfig
 
       - name: Checkout base branch
         uses: actions/checkout@v3
