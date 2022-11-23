@@ -41,12 +41,12 @@ jobs:
           live_tf_dirs="$( find ${working_directory} \
                               -mindepth 1 \
                               -maxdepth 2 \
-                              -name .terraform \
+                              -name main.tf \
                               -exec dirname {} \; | jq -R | jq -scM )"
           echo "tf_dirs=${all_tf_dirs}" 
           echo "live_tf_dirs=${live_tf_dirs}"
-          echo "tf_dirs=${all_tf_dirs}" >> $GITHUB_OUTPUTl
-          echo "live_tf_dirs=${live_tf_dirs}" >> $GITHUB_OUTPUT2
+          echo "tf_dirs=${all_tf_dirs}" >> $GITHUB_OUTPUT
+          echo "live_tf_dirs=${live_tf_dirs}" >> $GITHUB_OUTPUT
 
   terraform-fmt:
     runs-on: ubuntu-latest
