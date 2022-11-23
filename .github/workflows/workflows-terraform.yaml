@@ -15,6 +15,10 @@ on:
         default: "terraform"
         type: string
         description: "Terraform working directory"
+      infracost_api_key:
+        default: ${{ secrets.INFRACOST_API_KEY }}
+        type: string
+        description: "Infracost api key"
 
 jobs:
   setup:
@@ -110,6 +114,7 @@ jobs:
       pull-requests: write
     env:
       working_directory: ${{ inputs.working_directory }}
+      infracost_api_key: ${{ inputs.infracost_api_key }}
     strategy:
       matrix:
         tf_dirs: ${{fromJson(needs.setup.outputs.tf_dirs)}}
@@ -119,7 +124,7 @@ jobs:
         # See https://github.com/infracost/actions/tree/master/setup for other inputs
         # If you can't use this action, see Docker images in https://infracost.io/cicd
         with:
-          api-key: ${{ secrets.INFRACOST_API_KEY }}
+          api-key: ${infracost_api_key}
       - name: Checkout base branch
         uses: actions/checkout@v3
         with:
