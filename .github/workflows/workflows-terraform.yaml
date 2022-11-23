@@ -126,7 +126,6 @@ jobs:
       pull-requests: write
     env:
       working_directory: ${{ inputs.working_directory }}
-      infracost_api_key: ${{ secrets.infracost_api_key }}
       LVMH_GITHUB_TOKEN: ${{ secrets.LVMH_GITHUB_TOKEN }}
     strategy:
       matrix:
@@ -137,7 +136,7 @@ jobs:
         # See https://github.com/infracost/actions/tree/master/setup for other inputs
         # If you can't use this action, see Docker images in https://infracost.io/cicd
         with:
-          api-key: ${infracost_api_key}
+          api-key: ${{ secrets.infracost_api_key }}
 
       - name: setup github config for private modules
         run: |
