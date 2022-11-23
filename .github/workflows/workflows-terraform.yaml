@@ -19,6 +19,9 @@ on:
       infracost_api_key:
         description: "Infracost api key"
         required: true
+      LVMH_GITHUB_TOKEN:
+        description: "Token for get token"
+        required: true
 
 jobs:
   setup:
@@ -123,7 +126,8 @@ jobs:
       pull-requests: write
     env:
       working_directory: ${{ inputs.working_directory }}
-      infracost_api_key: ${{ inputs.infracost_api_key }}
+      infracost_api_key: ${{ secrets.infracost_api_key }}
+      LVMH_GITHUB_TOKEN: ${{ secrets.LVMH_GITHUB_TOKEN }}
     strategy:
       matrix:
         tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
@@ -134,6 +138,12 @@ jobs:
         # If you can't use this action, see Docker images in https://infracost.io/cicd
         with:
           api-key: ${infracost_api_key}
+
+      - name: setup github config for private modules
+        run: |
+          git config \
+            --global url."https://${LVMH_GITHUB_TOKEN}@gitlab.com".insteadOf https://gitlab.com
+
       - name: Checkout base branch
         uses: actions/checkout@v3
         with:
