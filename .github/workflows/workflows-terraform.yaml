@@ -33,9 +33,18 @@ jobs:
       - name: list tf directories
         id: tf_list
         run: |
-          dirs="$(find ${working_directory} -mindepth 1 -maxdepth 1 -type d | jq -R | jq -scM )"
-          echo "tf_dirs=${dirs}" >> $GITHUB_OUTPUT
-          echo "tf_dirs=${dirs}"
+          all_tf_dirs="$(find ${working_directory} ${working_directory}/modules \
+                              -mindepth 1 \
+                              -maxdepth 1 \
+                              -type d \
+                              -not -path "*modules" | jq -R | jq -scM )"
+          live_tf_dirs="$( find ${working_directory} \
+                              -mindepth 1 \
+                              -maxdepth 2 \
+                              -name .terraform \
+                              -exec dirname {} \; | jq -R | jq -scM )"
+          echo "tf_dirs=${all_tf_dirs}" >> $GITHUB_OUTPUTl
+          echo "live_tf_dirs=${live_tf_dirs}" >> $GITHUB_OUTPUTl
 
   terraform-fmt:
     runs-on: ubuntu-latest
@@ -114,7 +123,7 @@ jobs:
       infracost_api_key: ${{ inputs.infracost_api_key }}
     strategy:
       matrix:
-        tf_dirs: ${{fromJson(needs.setup.outputs.tf_dirs)}}
+        tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
     steps:
       - name: Setup Infracost
         uses: infracost/actions/setup@v2
