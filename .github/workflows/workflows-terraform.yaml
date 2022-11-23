@@ -5,6 +5,7 @@ on:
     inputs:
       kics-ignore:
         default: false
+        type: bool
         description: "ignore kics failure"
 
 jobs:
