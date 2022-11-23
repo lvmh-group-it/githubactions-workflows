@@ -17,7 +17,6 @@ on:
         description: "Terraform working directory"
     secrets:
       infracost_api_key:
-        type: string
         description: "Infracost api key"
         required: true
 
