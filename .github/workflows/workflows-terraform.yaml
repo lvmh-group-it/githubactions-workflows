@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tf_dirs: ${{ steps.tf_list.outputs.tf_dirs }}
+      live_tf_dirs: ${{ steps.tf_list.outputs.live_tf_dirs }}
     env:
       working_directory: ${{ inputs.working_directory }}
     steps:
