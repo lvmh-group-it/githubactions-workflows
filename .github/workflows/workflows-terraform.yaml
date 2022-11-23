@@ -120,16 +120,16 @@ jobs:
   infracost:
     name: Infracost
     runs-on: ubuntu-latest
-    needs: setup
+    #needs: setup
     permissions:
       contents: read
       pull-requests: write
     env:
       working_directory: ${{ inputs.working_directory }}
       LVMH_GITHUB_TOKEN: ${{ secrets.LVMH_GITHUB_TOKEN }}
-    strategy:
-      matrix:
-        tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
+    # strategy:
+    #   matrix:
+    #     tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
     steps:
       - name: Setup Infracost
         uses: infracost/actions/setup@v2
@@ -142,7 +142,6 @@ jobs:
         run: |
           git config \
             --global url."https://$LVMH_GITHUB_TOKEN@github.com".insteadOf https://github.com
-          cat ~/.gitconfig
 
       - name: Checkout base branch
         uses: actions/checkout@v3
@@ -152,7 +151,7 @@ jobs:
       # Generate Infracost JSON file as the baseline.
       - name: Generate Infracost cost estimate baseline
         run: |
-          infracost breakdown --path=${{ matrix.tf_dirs }} \
+          infracost breakdown --path=${working_directory} \
                               --format=json \
                               --out-file=/tmp/infracost-base.json
 
@@ -162,7 +161,7 @@ jobs:
 
       - name: Generate Infracost diff
         run: |
-          infracost diff --path=${{ matrix.tf_dirs }} \
+          infracost diff --path=${working_directory} \
                           --format=json \
                           --compare-to=/tmp/infracost-base.json \
                           --out-file=/tmp/infracost.json
