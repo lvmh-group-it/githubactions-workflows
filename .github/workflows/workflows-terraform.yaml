@@ -1,8 +1,7 @@
 name: "GitHub Actions terraform"
 
 on:
-  pull_request: { branches: [main] }
-  push: { branches: [main] }
+  workflow_call:
 
 jobs:
   setup:
@@ -87,3 +86,51 @@ jobs:
     - name: display kics results
       run: |
         cat myResults/results.json
+  
+  infracost:
+    name: Infracost
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      working_directory: terraform
+    strategy:
+      matrix:
+        tf_dirs: ${{fromJson(needs.setup.outputs.tf_dirs)}}
+    steps:
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v2
+        # See https://github.com/infracost/actions/tree/master/setup for other inputs
+        # If you can't use this action, see Docker images in https://infracost.io/cicd
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+      - name: Checkout base branch
+        uses: actions/checkout@v3
+        with:
+          ref: '${{ github.event.pull_request.base.ref }}'
+
+      # Generate Infracost JSON file as the baseline.
+      - name: Generate Infracost cost estimate baseline
+        run: |
+          infracost breakdown --path=${matrix.tf_dirs} \
+                              --format=json \
+                              --out-file=/tmp/infracost-base.json
+
+      # Checkout the current PR branch so we can create a diff.
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+
+      - name: Generate Infracost diff
+        run: |
+          infracost diff --path=${matrix.tf_dirs} \
+                          --format=json \
+                          --compare-to=/tmp/infracost-base.json \
+                          --out-file=/tmp/infracost.json
+      - name: Post Infracost comment
+        run: |
+            infracost comment github --path=/tmp/infracost.json \
+                                     --repo=$GITHUB_REPOSITORY \
+                                     --github-token=${{github.token}} \
+                                     --pull-request=${{github.event.pull_request.number}} \
+                                     --behavior=update
