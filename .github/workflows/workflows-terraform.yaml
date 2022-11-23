@@ -45,7 +45,7 @@ jobs:
           live_tf_dirs="$( find ${working_directory} \
                               -mindepth 1 \
                               -maxdepth 2 \
-                              -name main.tf \
+                              -not -path "*modules" \
                               -exec dirname {} \; | jq -R | jq -scM )"
           echo "tf_dirs=${all_tf_dirs}" 
           echo "live_tf_dirs=${live_tf_dirs}"
