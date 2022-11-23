@@ -11,6 +11,10 @@ on:
         default: "high,medium"
         type: string
         description: "kics level failure"
+      working_directory:
+        default: "terraform"
+        type: string
+        description: "Terraform working directory"
 
 jobs:
   setup:
@@ -18,7 +22,7 @@ jobs:
     outputs:
       tf_dirs: ${{ steps.tf_list.outputs.tf_dirs }}
     env:
-      working_directory: terraform
+      working_directory: ${{ inputs.working_directory }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -33,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: setup
     env:
-      working_directory: terraform
+      working_directory: ${{ inputs.working_directory }}
     strategy:
       matrix:
         tf_dirs: ${{fromJson(needs.setup.outputs.tf_dirs)}}
@@ -53,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: setup
     env:
-      working_directory: terraform
+      working_directory: ${{ inputs.working_directory }}
     strategy:
       matrix:
         tf_dirs: ${{fromJson(needs.setup.outputs.tf_dirs)}}
@@ -81,17 +85,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: setup
     env:
-      working_directory: terraform
-    strategy:
-      matrix:
-        tf_dirs: ${{fromJson(needs.setup.outputs.tf_dirs)}}
+      working_directory: ${{ inputs.working_directory }}
     steps:
       - uses: actions/checkout@v3
       - name: run kics Scan
         uses: checkmarx/kics-github-action@v1.6
         continue-on-error: ${{ inputs.kics-ignore }}
         with:
-          path: ${{ matrix.tf_dirs }}
+          path: ${working_directory}
           output_path: myResults/
           token: ${{ secrets.GITHUB_TOKEN }}
           fail_on: ${{ inputs.kics-level-failure }}
@@ -108,7 +109,7 @@ jobs:
       contents: read
       pull-requests: write
     env:
-      working_directory: terraform
+      working_directory: ${{ inputs.working_directory }}
     strategy:
       matrix:
         tf_dirs: ${{fromJson(needs.setup.outputs.tf_dirs)}}
@@ -147,4 +148,4 @@ jobs:
                                    --repo=$GITHUB_REPOSITORY \
                                    --github-token=${{github.token}} \
                                    --pull-request=${{github.event.pull_request.number}} \
-                                   --behavior=update
+                                   --behavior=new
