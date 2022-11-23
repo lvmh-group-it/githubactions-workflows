@@ -142,7 +142,7 @@ jobs:
       - name: setup github config for private modules
         run: |
           git config \
-            --global url."https://${LVMH_GITHUB_TOKEN}@gitlab.com".insteadOf https://gitlab.com
+            --global url."https://${LVMH_GITHUB_TOKEN}@github.com".insteadOf https://github.com
 
       - name: Checkout base branch
         uses: actions/checkout@v3
