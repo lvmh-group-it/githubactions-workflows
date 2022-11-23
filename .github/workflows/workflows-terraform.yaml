@@ -87,16 +87,13 @@ jobs:
 
   terraform-kics:
     runs-on: ubuntu-latest
-    needs: setup
-    env:
-      working_directory: ${{ inputs.working_directory }}
     steps:
       - uses: actions/checkout@v3
       - name: run kics Scan
         uses: checkmarx/kics-github-action@v1.6
         continue-on-error: ${{ inputs.kics-ignore }}
         with:
-          path: ${working_directory}
+          path: ${{ inputs.working_directory }}
           output_path: myResults/
           token: ${{ secrets.GITHUB_TOKEN }}
           fail_on: ${{ inputs.kics-level-failure }}
