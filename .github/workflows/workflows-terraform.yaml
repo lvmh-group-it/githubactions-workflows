@@ -37,16 +37,14 @@ jobs:
       - name: list tf directories
         id: tf_list
         run: |
-          all_tf_dirs="$(find ${working_directory} ${working_directory}/modules \
-                              -mindepth 1 \
-                              -maxdepth 1 \
-                              -type d \
-                              -not -path "*modules" | jq -R | jq -scM )"
-          live_tf_dirs="$( find ${working_directory} \
-                              -mindepth 1 \
-                              -maxdepth 2 \
-                              -not -path "*modules" \
-                              -exec dirname {} \; | jq -R | jq -scM )"
+          all_tf_dirs="$(find ${working_directory} \
+                             -name '*.tf' \
+                             -not -path "*\.terraform*" \
+                             -exec dirname {} \; | sort -u | jq -R | jq -scM )"
+          live_tf_dirs="$(find ${working_directory} \
+                             -name '*.tf' \
+                             -not -path "*modules*" \
+                             -exec dirname {} \; | sort -u | jq -R | jq -scM )"
           echo "tf_dirs=${all_tf_dirs}" 
           echo "live_tf_dirs=${live_tf_dirs}"
           echo "tf_dirs=${all_tf_dirs}" >> $GITHUB_OUTPUT
