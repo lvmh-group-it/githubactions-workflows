@@ -77,7 +77,7 @@ jobs:
       working_directory: ${{ inputs.working_directory }}
     strategy:
       matrix:
-        tf_dirs: ${{fromJson(needs.setup.outputs.tf_dirs)}}
+        tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
