@@ -22,6 +22,10 @@ on:
       LVMH_GITHUB_TOKEN:
         description: "Token for get token"
         required: true
+      WIZ_CLIENT_ID:
+        description: "Wiz Client ID sac"
+      WIZ_CLIENT_SECRET:
+        description: "Wiz Client Secret sac"
 
 jobs:
   setup:
@@ -171,3 +175,32 @@ jobs:
                                    --github-token=${{github.token}} \
                                    --pull-request=${{github.event.pull_request.number}} \
                                    --behavior=update
+
+  wiz-cli-iac-scan:
+      name: 'Wiz-cli IaC Scan'
+      runs-on: ubuntu-latest
+      env:
+        SCAN_PATH: ${{ inputs.working_directory }}
+        POLICY: "Default IaC policy" # Set the desired Wiz-cli policy to use
+
+      # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+      defaults:
+        run:
+          shell: bash
+
+      steps:
+      # Checkout the repository to the GitHub Actions runner
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Download Wiz-cli
+        run: curl -o wizcli https://wizcli.app.wiz.io/wizcli && chmod +x wizcli
+
+      - name: Authenticate to Wiz
+        run: ./wizcli auth --id "$WIZ_CLIENT_ID" --secret "$WIZ_CLIENT_SECRET"
+        env:
+          WIZ_CLIENT_ID: ${{ secrets.WIZ_CLIENT_ID }}
+          WIZ_CLIENT_SECRET: ${{ secrets.WIZ_CLIENT_SECRET }}
+
+      - name: Run wiz-cli IaC scan
+        run: ./wizcli iac scan --path $SCAN_PATH --policy "$POLICY"
