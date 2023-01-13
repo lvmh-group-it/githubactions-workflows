@@ -38,14 +38,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v35
+        with:
+          files: |
+            ${working_directory}/**
+
       - name: list tf directories
         id: tf_list
+        if: steps.changed-files-specific.outputs.any_changed == 'true'
         run: |
-          all_tf_dirs="$(find ${working_directory} \
+          dirs="$(for d in ${{ steps.changed-files-specific.outputs.all_changed_files }} ; do echo -n dirname $d ; done | sort -u)"
+          all_tf_dirs="$(find ${dirs} \
                              -name '*.tf' \
                              -not -path "*\.terraform*" \
                              -exec dirname {} \; | sort -u | jq -R | jq -scM )"
-          live_tf_dirs="$(find ${working_directory} \
+          live_tf_dirs="$(find ${dirs} \
                              -name '*.tf' \
                              -not -path "*modules*" \
                              -exec dirname {} \; | sort -u | jq -R | jq -scM )"
@@ -153,10 +163,10 @@ jobs:
       # Generate Infracost JSON file as the baseline.
       - name: Generate Infracost cost estimate baseline
         run: |
-          mkdir -p ${working_directory}
           infracost breakdown --path=${working_directory} \
                               --format=json \
-                              --out-file=/tmp/infracost-base.json
+                              --out-file=/tmp/infracost-base.json \
+                    || export NO_BASE_TF=1 && export NO_BASE_TF=0
 
       # Checkout the current PR branch so we can create a diff.
       - name: Checkout PR branch
@@ -164,10 +174,16 @@ jobs:
 
       - name: Generate Infracost diff
         run: |
-          infracost diff --path=${working_directory} \
+          if [ "$NO_BASE_TF" -eq 1 ]
+          then
+              infracost diff --path=${working_directory} \
                           --format=json \
                           --compare-to=/tmp/infracost-base.json \
                           --out-file=/tmp/infracost.json
+          else
+              infracost breakdown --path=${working_directory} \
+                              --format=json \
+                              --out-file=/tmp/infracost.json
       - name: Post Infracost comment
         run: |
           infracost comment github --path=/tmp/infracost.json \
@@ -177,6 +193,8 @@ jobs:
                                    --behavior=update
 
   wiz-cli-iac-scan:
+      if: ${{ secrets.WIZ_CLIENT_ID != "" }}
+      
       name: 'Wiz-cli IaC Scan'
       runs-on: ubuntu-latest
       env:
