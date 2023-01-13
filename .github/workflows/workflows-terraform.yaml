@@ -176,7 +176,7 @@ jobs:
 
       - name: Generate Infracost diff
         run: |
-          if [ "$NO_BASE_TF" -eq 1 ]
+          if [ "$NO_BASE_TF" -eq 0 ]
           then
               infracost diff --path=${working_directory} \
                           --format=json \
@@ -186,6 +186,7 @@ jobs:
               infracost breakdown --path=${working_directory} \
                               --format=json \
                               --out-file=/tmp/infracost.json
+          fi
       - name: Post Infracost comment
         run: |
           infracost comment github --path=/tmp/infracost.json \
