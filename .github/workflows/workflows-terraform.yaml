@@ -222,7 +222,7 @@ jobs:
   wiz-cli-iac-scan:
     name: "Wiz-cli IaC Scan"
     runs-on: ubuntu-latest
-    if: env.WIZ_CLIENT_ID != null
+    if: secrets.WIZ_CLIENT_ID != null
     env:
       SCAN_PATH: ${{ inputs.working_directory }}
       POLICY: ${{ inputs.WIZ_POLICY }
