@@ -36,7 +36,7 @@ Description :
         type: string
         description: "policy to use with wiz" 
 
-## Secrets
+### Secrets
 
 - infracost_api_key:
 
@@ -56,7 +56,7 @@ Description :
 
         description: "Wiz Client Secret sac"
 
-## Usage
+### Usage
 
 Exemple to import in other pipeline :
 
