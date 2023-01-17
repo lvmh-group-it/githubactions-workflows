@@ -199,7 +199,7 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v3
 
-      - name: Generate Infracost diff
+      - name: Generate Infracost report
         run: |
           if [ "$NO_BASE_TF" -eq 0 ]
           then
@@ -208,11 +208,10 @@ jobs:
                           --compare-to=/tmp/infracost-base.json \
                           --out-file=/tmp/infracost.json
           else
-              infracost breakdown --path=${working_directory} \
-                              --format=json \
-                              --out-file=/tmp/infracost.json
+              infracost breakdown --path=${working_directory}
           fi
       - name: Post Infracost comment
+        if: github.event_name == 'pull_request'
         run: |
           infracost comment github --path=/tmp/infracost.json \
                                    --repo=$GITHUB_REPOSITORY \
