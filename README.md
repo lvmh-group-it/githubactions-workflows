@@ -4,13 +4,14 @@ List of all workflow for lvmh can be include to other repos
 
 ## terraform
 
-| Info | value |
+|  |  |
 |--------------|------------------------------------------|
 | **Location** | .github/worflows/worflows-terraform.yaml |
 | **Description** | Pipeline to check terraform code |
 | **Check list** | [fmt](https://developer.hashicorp.com/terraform/cli/commands/fmt), [lint](https://github.com/terraform-linters/tflint), [kics](https://github.com/Checkmarx/kics-github-action), [infracost](https://www.infracost.io/), [LVMH wiz](https://www.wiz.io/)
 
 ### inputs
+
 - kics-ignore:
 
         default: false
