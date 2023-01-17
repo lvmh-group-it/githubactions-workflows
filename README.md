@@ -4,10 +4,6 @@ List of all workflow for lvmh can be include to other repos
 
 ## terraform
 
-Location : .github/worflows/worflows-terraform.yaml
-
-Description : 
-
 | Info | value |
 |--------------|------------------------------------------|
 | **Location** | .github/worflows/worflows-terraform.yaml |
