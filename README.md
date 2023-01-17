@@ -11,7 +11,8 @@ Description :
 | Info | value |
 |--------------|------------------------------------------|
 | **Location** | .github/worflows/worflows-terraform.yaml |
-| **description** | Pipeline to check terraform code |
+| **Description** | Pipeline to check terraform code |
+| **Check list** | [fmt](https://developer.hashicorp.com/terraform/cli/commands/fmt), [lint](https://github.com/terraform-linters/tflint), [kics](https://github.com/Checkmarx/kics-github-action), [infracost](https://www.infracost.io/), [LVMH wiz](https://www.wiz.io/)
 
 ### inputs
 - kics-ignore:
