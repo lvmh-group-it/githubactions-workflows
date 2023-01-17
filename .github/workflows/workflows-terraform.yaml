@@ -146,7 +146,7 @@ jobs:
         uses: checkmarx/kics-github-action@v1.6
         continue-on-error: ${{ inputs.kics-ignore }}
         with:
-          path: ${{ join(fromJson(needs.setup.outputs.tf_dirs) , ",") }}
+          path: ${{ join(fromJson(needs.setup.outputs.tf_dirs)) }}
           output_path: myResults/
           token: ${{ secrets.GITHUB_TOKEN }}
           fail_on: ${{ inputs.kics-level-failure }}
