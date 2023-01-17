@@ -222,7 +222,6 @@ jobs:
   wiz-cli-iac-scan:
     name: "Wiz-cli IaC Scan"
     runs-on: ubuntu-latest
-    if: secrets.WIZ_CLIENT_ID != null
     env:
       SCAN_PATH: ${{ inputs.working_directory }}
       POLICY: ${{ inputs.WIZ_POLICY }
@@ -237,13 +236,17 @@ jobs:
     steps:
       # Checkout the repository to the GitHub Actions runner
       - name: Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
+        if: ${{ env.WIZ_CLIENT_ID != null }}
 
       - name: Download Wiz-cli
         run: curl -o wizcli https://wizcli.app.wiz.io/wizcli && chmod +x wizcli
+        if: ${{ env.WIZ_CLIENT_ID != null }}
 
       - name: Authenticate to Wiz
         run: ./wizcli auth --id "$WIZ_CLIENT_ID" --secret "$WIZ_CLIENT_SECRET"
+        if: ${{ env.WIZ_CLIENT_ID != null }}
 
       - name: Run wiz-cli IaC scan
         run: ./wizcli iac scan --path $SCAN_PATH --policy "$POLICY"
+        if: ${{ env.WIZ_CLIENT_ID != null }}
