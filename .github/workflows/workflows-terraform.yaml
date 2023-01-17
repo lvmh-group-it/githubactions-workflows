@@ -46,7 +46,7 @@ jobs:
         uses: tj-actions/changed-files@v35
         with:
           files: |
-            ${{ inputs.working_directory }}/**
+            ${{ env.working_directory }}/**
 
       - name: list tf directories
         id: tf_list
