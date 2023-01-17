@@ -45,8 +45,7 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@v35
         with:
-          files: |
-            ./**
+          files: ${{ env.working_directory }}
 
       - name: list tf directories
         id: tf_list
@@ -90,6 +89,7 @@ jobs:
   terraform-lint:
     runs-on: ubuntu-latest
     needs: setup
+    if: needs.setup.outputs.tf_dirs != null
     env:
       working_directory: ${{ inputs.working_directory }}
     strategy:
