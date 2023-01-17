@@ -224,7 +224,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SCAN_PATH: ${{ inputs.working_directory }}
-      POLICY: ${{ inputs.wiz_policy }
+      POLICY: ${{ inputs.wiz_policy }}
       WIZ_CLIENT_ID: ${{ secrets.WIZ_CLIENT_ID }}
       WIZ_CLIENT_SECRET: ${{ secrets.WIZ_CLIENT_SECRET }}
 
