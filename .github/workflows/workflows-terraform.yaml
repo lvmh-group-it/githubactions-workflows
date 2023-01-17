@@ -52,33 +52,22 @@ jobs:
         with:
           files: ${{ env.working_directory }}
 
-      - name: List tf directories changed
+      - name: List tf directories
         id: tf_list
-        if: steps.changed-files.outputs.any_changed == 'true'
+        if: |
+          steps.changed-files.outputs.any_changed == 'true' || github.event_name != 'pull_request'
         run: |
-          dirs="$(for d in ${{ steps.changed-files-specific.outputs.all_changed_files }} ; do echo -n dirname $d ; done | sort -u)"
+          if [ "${{ steps.changed-files.outputs.any_changed }}" == 'true' ]
+          then
+            dirs="$(for d in ${{ steps.changed-files-specific.outputs.all_changed_files }} ; do echo -n dirname $d ; done | sort -u)"
+          else
+            dirs="${{ env.working_directory }}"
+          fi
           all_tf_dirs="$(find ${dirs} \
                              -name '*.tf' \
                              -not -path "*\.terraform*" \
                              -exec dirname {} \; | sort -u | jq -R | jq -scM )"
           live_tf_dirs="$(find ${dirs} \
-                             -name '*.tf' \
-                             -not -path "*modules*" \
-                             -exec dirname {} \; | sort -u | jq -R | jq -scM )"
-          echo "tf_dirs=${all_tf_dirs}" 
-          echo "live_tf_dirs=${live_tf_dirs}"
-          echo "tf_dirs=${all_tf_dirs}" >> $GITHUB_OUTPUT
-          echo "live_tf_dirs=${live_tf_dirs}" >> $GITHUB_OUTPUT
-
-      - name: Default list directories
-        id: tf_list_default
-        if: github.event_name != 'pull_request'
-        run: |
-          all_tf_dirs="$(find ${{ env.working_directory }} \
-                             -name '*.tf' \
-                             -not -path "*\.terraform*" \
-                             -exec dirname {} \; | sort -u | jq -R | jq -scM )"
-          live_tf_dirs="$(find ${{ env.working_directory }} \
                              -name '*.tf' \
                              -not -path "*modules*" \
                              -exec dirname {} \; | sort -u | jq -R | jq -scM )"
