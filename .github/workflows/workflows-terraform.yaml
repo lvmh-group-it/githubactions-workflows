@@ -49,7 +49,7 @@ jobs:
 
       - name: list tf directories
         id: tf_list
-        if: steps.changed-files-specific.outputs.any_changed == 'true'
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           dirs="$(for d in ${{ steps.changed-files-specific.outputs.all_changed_files }} ; do echo -n dirname $d ; done | sort -u)"
           all_tf_dirs="$(find ${dirs} \
