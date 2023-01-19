@@ -182,7 +182,7 @@ jobs:
           infracost breakdown --path=${working_directory} \
                               --format=json \
                               --out-file=/tmp/infracost-base.json \
-                    || export NO_BASE_TF=1 && export NO_BASE_TF=0
+                    || export BASE_TF="false" && export BASE_TF="true"
 
       # Checkout the current PR branch so we can create a diff.
       - name: Checkout PR branch
@@ -190,14 +190,21 @@ jobs:
 
       - name: Generate Infracost report
         run: |
-          if [ $NO_BASE_TF -eq 0 ]
+          if [ "$BASE_TF" == "true" ]
           then
               infracost diff --path=${working_directory} \
                           --format=json \
                           --compare-to=/tmp/infracost-base.json \
                           --out-file=/tmp/infracost.json
           else
-              infracost breakdown --path=${working_directory}
+              if [ "${{ github.event_name }}" == 'pull_request' ]
+              then
+                infracost breakdown --path=${working_directory} \
+                                    --format=json \
+                                    --out-file=/tmp/infracost.json
+              else
+                infracost breakdown --path=${working_directory}
+              fi
           fi
       - name: Post Infracost comment
         if: github.event_name == 'pull_request'
