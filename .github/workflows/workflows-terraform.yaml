@@ -190,7 +190,7 @@ jobs:
 
       - name: Generate Infracost report
         run: |
-          if [ "$NO_BASE_TF" -eq 0 ]
+          if [ $NO_BASE_TF -eq 0 ]
           then
               infracost diff --path=${working_directory} \
                           --format=json \
