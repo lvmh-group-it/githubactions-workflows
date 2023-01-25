@@ -59,7 +59,7 @@ jobs:
         run: |
           if [ "${{ steps.changed-files.outputs.any_changed }}" == 'true' ]
           then
-            dirs="$(for d in ${{ steps.changed-files.outputs.all_changed_files }} ; do echo -n dirname $d ; done | sort -u)"
+            dirs="$(for d in ${{ steps.changed-files.outputs.all_changed_files }} ; do echo -n "$(dirname $d) " ; done | sort -u)"
           else
             dirs="${{ env.working_directory }}"
           fi
