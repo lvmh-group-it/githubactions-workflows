@@ -19,6 +19,32 @@ on:
         default: "Default IaC policy"
         type: string
         description: "policy to use with wiz"
+      terraform_plan_enable:
+        default: false
+        type: boolean
+        description: "Enable terraform plan"
+      terraform_apply_enable:
+        default: false
+        type: boolean
+        description: "Enable terraform auto apply"
+      terraform_cloud_provider:
+        default: null
+        type: choice
+        description: "Cloud provider managed by terraform"
+        options:
+          - gcp
+      terraform_vars:
+        default: ""
+        type: string
+        description: "Terraform Vars, exemple : var1=test var2=test2"
+      gcp_project_number:
+        default: null
+        type: string
+        description: "GCP project number"
+      gcp_workload_identity_sac_name:
+        default: null
+        type: string
+        description: "Workload identity service account name"
     secrets:
       infracost_api_key:
         description: "Infracost api key"
@@ -122,7 +148,95 @@ jobs:
           cd ${{ matrix.tf_dirs }}
           tflint -f compact
 
-  terraform-kics:
+  terraform_plan:
+    name: "Plan Terraform"
+    runs-on: ubuntu-latest
+    if: ${{ inputs.terraform_plan_enable }}
+    permissions:
+      contents: "read"
+      id-token: "write"
+    strategy:
+      fail-fast: false
+      matrix:
+        tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: install tfenv
+        run: |
+          git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
+      - name: get tfenv tflint_version
+        run: |
+          cd ${{ matrix.tf_dirs }} 
+          echo "tf_version=$(~/.tfenv/tfenv version-name)" >> $GITHUB_ENV
+
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.tf_version}}
+
+      # Authenticate On providers
+      ## GCP
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v1
+        if: ${{ input.cloud_provider == "gcp" }}
+        with:
+          workload_identity_provider: projects/${{ inputs.gcp_project_number }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-action-public
+          service_account: ${{ inputs.gcp_workload_identity_sac_name }}
+
+      - name: Configure git
+        run: git config --global url."https://oauth2:${{ secrets.LVMH_GITHUB_TOKEN }}@github.com".insteadOf https://github.com
+
+      - name: Terraform init
+        run: |
+          terraform init -input=false -no-color
+
+      - name: set custom terraform vars
+        run: |
+          if [ -n "${{ inputs.terraform_vars }}"]
+          then
+            for vars in ${{ inputs.terraform_vars }}
+            do
+              echo "TF_VAR_$vars" >> $GITHUB_ENV
+            done
+          fi
+
+      - name: Terraform plan
+        id: plan
+        # We run the plan in a distinct command to isolate and ignore the refresh logs
+        run: |
+          terraform plan -input=false -no-color -out=tfplan \
+          && terraform show -no-color tfplan -json > tfplan.json \
+          && terraform show -no-color tfplan
+      
+      - name: Reformat Plan
+        run: |
+          echo '${{ steps.plan.outputs.stdout || steps.plan.outputs.stderr }}' \
+            | sed -E 's/^([[:space:]]+)([-+])/\2\1/g' > plan.txt
+          echo "${{ matrix.plan_environment_variable }}<<EOF" >> $GITHUB_ENV
+          cat plan.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+      
+      - uses: actions/upload-artifact@v2
+        with:
+          name: tfplan
+          path: ${{ github.workspace }}/tfplan.json
+
+      - name: Post Plan to GitHub PR
+        uses: mshick/add-pr-comment@v1
+        if: ${{ github.event_name  == 'pull_request' }}
+        with:
+          allow-repeats: true
+          repo-token: ${{ secrets.LVMH_GITHUB_TOKEN }}
+          repo-token-user-login: "github-actions[bot]"
+          message: |
+            ## ${{ matrix.environment_name }} plan
+            ```diff
+            ${{ env[matrix.plan_environment_variable] }}
+            ```
+
+  terraform-kics-base:
     runs-on: ubuntu-latest
     needs: setup
     if: needs.setup.outputs.tf_dirs != null
@@ -133,6 +247,31 @@ jobs:
         continue-on-error: ${{ inputs.kics-ignore }}
         with:
           path: ${{ join(fromJson(needs.setup.outputs.tf_dirs)) }}
+          output_path: myResults/
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on: ${{ inputs.kics-level-failure }}
+          enable_comments: true
+      - name: display kics results
+        run: |
+          cat myResults/results.json
+
+  terraform-kics-tfplan:
+    runs-on: ubuntu-latest
+    needs: terraform_plan
+    strategy:
+      fail-fast: false
+      matrix:
+        tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v2
+        with:
+          name: tfplan ${{ matrix.tf_dirs }}
+      - name: run kics Scan
+        uses: checkmarx/kics-github-action@v1.6
+        continue-on-error: ${{ inputs.kics-ignore }}
+        with:
+          path: tfplan.json
           output_path: myResults/
           token: ${{ secrets.GITHUB_TOKEN }}
           fail_on: ${{ inputs.kics-level-failure }}
@@ -242,3 +381,6 @@ jobs:
       - name: Run wiz-cli IaC scan
         run: ./wizcli iac scan --path $SCAN_PATH --policy "$POLICY"
         if: ${{ env.WIZ_CLIENT_ID != null }}
+
+
+
