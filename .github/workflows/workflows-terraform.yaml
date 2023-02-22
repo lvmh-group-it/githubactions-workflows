@@ -183,6 +183,11 @@ jobs:
         with:
           workload_identity_provider: projects/${{ inputs.gcp_project_number }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-action-public
           service_account: ${{ inputs.gcp_workload_identity_sac_name }}
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+      - name: debug
+        run: |
+          gcloud projects list
 
       - name: Configure git
         run: git config --global url."https://oauth2:${{ secrets.LVMH_GITHUB_TOKEN }}@github.com".insteadOf https://github.com
