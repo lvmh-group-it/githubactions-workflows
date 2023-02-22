@@ -29,10 +29,8 @@ on:
         description: "Enable terraform auto apply"
       terraform_cloud_provider:
         default: null
-        type: choice
+        type: string
         description: "Cloud provider managed by terraform"
-        options:
-          - gcp
       terraform_vars:
         default: ""
         type: string
