@@ -206,7 +206,8 @@ jobs:
         # We run the plan in a distinct command to isolate and ignore the refresh logs
         run: |
           terraform plan -input=false -no-color -out=tfplan \
-          && terraform show -no-color -json tfplan > tfplan.json
+          && terraform show -no-color -json tfplan > tfplan.json \
+          && terraform show -no-color tfplan
       
       - name: Reformat Plan
         run: |
