@@ -149,6 +149,7 @@ jobs:
   terraform_plan:
     name: "Plan Terraform"
     runs-on: ubuntu-latest
+    needs: setup
     if: ${{ inputs.terraform_plan_enable }}
     permissions:
       contents: "read"
