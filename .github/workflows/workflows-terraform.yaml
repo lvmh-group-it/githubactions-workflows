@@ -326,14 +326,14 @@ jobs:
         run: |
           cat plan/tfplan.json
       - name: run kics Scan
-        uses: checkmarx/kics-github-action@master
+        uses: checkmarx/kics-github-action@1.6
         continue-on-error: ${{ inputs.kics-ignore }}
         with:
           path: plan/tfplan.json
           output_path: myResults/
           token: ${{ secrets.LVMH_GITHUB_TOKEN }}
           fail_on: ${{ inputs.kics-level-failure }}
-          queries: grp-compliance-ci-kics/assets/queries
+         # queries: grp-compliance-ci-kics/assets/queries
           enable_comments: true
       - name: display kics results
         run: |
