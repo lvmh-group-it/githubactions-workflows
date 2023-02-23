@@ -44,7 +44,7 @@ on:
         type: string
         description: "Workload identity service account name"
       kics_custom_queries_repo:
-        default: "lvmh-group-it/grp-compliance-ci-kics"
+        default: "lvmh-group-it/terraform-module-enable-terraform-ci-cd"
         type: string
         description: kics queries repository
       kics_custom_queries_branch:
@@ -303,12 +303,12 @@ jobs:
         tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           repository: ${{ inputs.kics_custom_queries_repo }}
           token: ${{ secrets.GITHUB_TOKEN }}
           path: git/
           ref: ${{ inputs.kics_custom_queries_branch }}
-      - uses: actions/checkout@v3
       - uses: actions/download-artifact@v2
         with:
           name: tfplan ${{matrix.tf_dirs}}
