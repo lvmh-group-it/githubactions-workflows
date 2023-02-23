@@ -363,6 +363,7 @@ jobs:
           queries: "/app/bin/assets/queries,grp-compliance-ci-kics/assets/queries"
           enable_comments: true
           exclude_queries:  "${{ inputs.kics-exclude-queries }}"
+          excluded_column_for_comments_with_queries: description_id,similarity_id
 
       - name: display kics results
         run: |
