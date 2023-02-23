@@ -327,7 +327,6 @@ jobs:
         run: |
           cat <<EOF >>kics.config
           {
-            "path": "plan/tfplan.json"
             "log-file": true,
             "minimal-ui": false,
             "no-color": false,
@@ -345,6 +344,7 @@ jobs:
         uses: checkmarx/kics-github-action@v1.6
         continue-on-error: ${{ inputs.kics-ignore }}
         with:
+          path: "plan/tfplan.json"
           config_path: ./kics.config
           token: ${{ secrets.LVMH_GITHUB_TOKEN }}
           fail_on: ${{ inputs.kics-level-failure }}
