@@ -64,6 +64,12 @@ on:
         description: "Wiz Client Secret sac"
 
 jobs:
+  #########################################################
+  #
+  # Step to list all TF directories live and not live to make matrix after
+  # If it is a PR, get only modify files
+  #
+  #########################################################
   setup:
     runs-on: ubuntu-latest
     outputs:
@@ -108,6 +114,11 @@ jobs:
           echo "tf_dirs=${all_tf_dirs}" >> $GITHUB_OUTPUT
           echo "live_tf_dirs=${live_tf_dirs}" >> $GITHUB_OUTPUT
 
+  #########################################################
+  #
+  # Simple fmt check to have clean format on tf
+  #
+  #########################################################
   terraform-fmt:
     runs-on: ubuntu-latest
     needs: setup
@@ -127,6 +138,11 @@ jobs:
           cd ${{ matrix.tf_dirs }}
           terraform fmt --check
 
+  #########################################################
+  #
+  # test linting to avoid big errors
+  #
+  #########################################################
   terraform-lint:
     runs-on: ubuntu-latest
     needs: setup
@@ -154,6 +170,11 @@ jobs:
           cd ${{ matrix.tf_dirs }}
           tflint -f compact
 
+  #########################################################
+  #
+  # if terraform_plan_enable is tru make plan and post in PR discution
+  #
+  #########################################################
   terraform_plan:
     name: "Plan Terraform"
     runs-on: ubuntu-latest
@@ -246,6 +267,12 @@ jobs:
             ${{ env.current_plan }}
             ```
 
+  #########################################################
+  #
+  # Use kics : https://kics.io/ to made compliance
+  # download custom code if needed, see : https://github.com/lvmh-group-it/grp-compliance-ci-kics
+  #
+  #########################################################
   terraform-kics-base:
     runs-on: ubuntu-latest
     needs: setup
@@ -280,7 +307,7 @@ jobs:
         with:
           repository: ${{ inputs.kics_custom_queries_repo }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          path: grp-compliance-ci-kics/
+          path: git/
           ref: ${{ inputs.kics_custom_queries_branch }}
       - uses: actions/download-artifact@v2
         with:
@@ -294,12 +321,17 @@ jobs:
           output_path: myResults/
           token: ${{ secrets.GITHUB_TOKEN }}
           fail_on: ${{ inputs.kics-level-failure }}
-          queries: grp-compliance-ci-kics/assets/queries
+          queries: git/grp-compliance-ci-kics/assets/queries
           enable_comments: true
       - name: display kics results
         run: |
           cat myResults/results.json
 
+  #########################################################
+  #
+  # generate infrastructure cost
+  #
+  #########################################################
   infracost:
     name: Infracost
     runs-on: ubuntu-latest
@@ -370,6 +402,11 @@ jobs:
                                    --pull-request=${{github.event.pull_request.number}} \
                                    --behavior=update
 
+  #########################################################
+  #
+  # Use wizz for security compliance : https://www.wiz.io/
+  #
+  #########################################################
   wiz-cli-iac-scan:
     name: "Wiz-cli IaC Scan"
     runs-on: ubuntu-latest
