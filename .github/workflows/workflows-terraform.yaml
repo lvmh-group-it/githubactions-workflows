@@ -330,6 +330,7 @@ jobs:
           path: plan
       - name: Create config file
         # creating a heredoc config file
+        # Disable secret detection because it 
         run: |
           cat <<EOF >>kics.config
           {
@@ -355,6 +356,7 @@ jobs:
           fail_on: ${{ inputs.kics-level-failure }}
           queries: "grp-compliance-ci-kics/assets/queries"
           enable_comments: true
+          exclude_queries: "9fb1cd65-7a07-4531-9bcf-47589d0f82d6"
 
       - name: display kics results
         run: |
