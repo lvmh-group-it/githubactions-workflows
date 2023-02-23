@@ -213,7 +213,8 @@ jobs:
         run: |
           echo '${{ steps.plan.outputs.stdout || steps.plan.outputs.stderr }}' \
             | sed -E 's/^([[:space:]]+)([-+])/\2\1/g' > plan.txt
-          echo "${{ matrix.plan_environment_variable }}<<EOF" >> $GITHUB_ENV
+          
+          echo "current_plan<<EOF" >> $GITHUB_ENV
           cat plan.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
       
@@ -230,9 +231,9 @@ jobs:
           repo-token: ${{ secrets.LVMH_GITHUB_TOKEN }}
           repo-token-user-login: "github-actions[bot]"
           message: |
-            ## ${{ matrix.environment_name }} plan
+            ## ${{ matrix.tf_dirs }} plan
             ```diff
-            ${{ env[matrix.plan_environment_variable] }}
+            ${{ env.current_plan }}
             ```
 
   terraform-kics-base:
