@@ -307,7 +307,7 @@ jobs:
         with:
           repository: ${{ inputs.kics_custom_queries_repo }}
           token: ${{ secrets.LVMH_GITHUB_TOKEN }}
-          path: git/
+          path: grp-compliance-ci-kics/
           ref: ${{ inputs.kics_custom_queries_branch }}
       - uses: actions/download-artifact@v2
         with:
@@ -321,7 +321,7 @@ jobs:
           output_path: myResults/
           token: ${{ secrets.LVMH_GITHUB_TOKEN }}
           fail_on: ${{ inputs.kics-level-failure }}
-          queries: git/grp-compliance-ci-kics/assets/queries
+          queries: grp-compliance-ci-kics/assets/queries
           enable_comments: true
       - name: display kics results
         run: |
