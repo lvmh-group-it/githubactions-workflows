@@ -322,6 +322,9 @@ jobs:
         with:
           name: tfplan ${{matrix.tf_dirs}}
           path: ${{ github.workspace }}/tfplan.json
+      - name: debug
+        run: |
+          cat ${{ github.workspace }}/tfplan.json
       - name: run kics Scan
         uses: checkmarx/kics-github-action@v1.6
         continue-on-error: ${{ inputs.kics-ignore }}
