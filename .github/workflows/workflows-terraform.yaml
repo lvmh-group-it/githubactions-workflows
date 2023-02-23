@@ -207,23 +207,23 @@ jobs:
         # We run the plan in a distinct command to isolate and ignore the refresh logs
         run: |
           cd ${{ matrix.tf_dirs }} \
-          && terraform plan -input=false -no-color -out=${{ github.workspace }}/tfplan \
-          && terraform show -no-color -json tfplan > ${{ github.workspace }}/tfplan.json \
-          && terraform show -no-color ${{ github.workspace }}/tfplan
+          && terraform plan -input=false -no-color -out=/tmp/tfplan \
+          && terraform show -no-color -json tfplan > /tmp/tfplan.json \
+          && terraform show -no-color /tmp/tfplan
 
       - name: Reformat Plan
         run: |
           echo '${{ steps.plan.outputs.stdout || steps.plan.outputs.stderr }}' \
-            | sed -E 's/^([[:space:]]+)([-+])/\2\1/g' > plan.txt
+            | sed -E 's/^([[:space:]]+)([-+])/\2\1/g' > /tmp/plan.txt
 
           echo "current_plan<<EOF" >> $GITHUB_ENV
-          cat plan.txt >> $GITHUB_ENV
+          cat /tmp/plan.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - uses: actions/upload-artifact@v2
         with:
-          name: tfplan_${{hashFiles(matrix.tf_dirs)}}
-          path: ${{ github.workspace }}/tfplan.json
+          name: tfplan ${{matrix.tf_dirs}}
+          path: /tmp/tfplan.json
 
       - name: Post Plan to GitHub PR
         uses: mshick/add-pr-comment@v1
@@ -270,7 +270,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v2
         with:
-          name: tfplan_${{hashFiles(matrix.tf_dirs)}}
+          name: tfplan ${{matrix.tf_dirs}}
           path: ${{ github.workspace }}/tfplan.json
       - name: run kics Scan
         uses: checkmarx/kics-github-action@v1.6
