@@ -365,11 +365,11 @@ jobs:
           exclude_queries: "${{ inputs.kics-exclude-queries }}"
 
       - name: save results
-        if: ${{ failure() }}
+        if: ${{ github.event_name  == 'pull_request' && failure() }}
         run: |
-          echo "kics_results<<EOF" >> $GITHUB_OUTPUT
+          echo "kics_results<<GEOF" >> $GITHUB_OUTPUT
           cat myResults/results.html >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "GEOF" >> $GITHUB_OUTPUT
 
       - name: comment results
         uses: mshick/add-pr-comment@v1
@@ -385,8 +385,9 @@ jobs:
             ```
 
       - name: display kics results
+        if: ${{ always() }}
         run: |
-          cat myResults/results.json
+          cat myResults/results.html
 
   #########################################################
   #
