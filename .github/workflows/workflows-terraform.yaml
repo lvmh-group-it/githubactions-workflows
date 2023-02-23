@@ -364,13 +364,6 @@ jobs:
           output_formats: "json,html"
           exclude_queries: "${{ inputs.kics-exclude-queries }}"
 
-      - name: save results
-        if: ${{ github.event_name  == 'pull_request' && failure() }}
-        run: |
-          echo "kics_results<<GEOF" >> $GITHUB_OUTPUT
-          cat myResults/results.html >> $GITHUB_OUTPUT
-          echo "GEOF" >> $GITHUB_OUTPUT
-
       - name: comment results
         uses: mshick/add-pr-comment@v1
         if: ${{ github.event_name  == 'pull_request' && failure() }}
@@ -378,11 +371,7 @@ jobs:
           allow-repeats: true
           repo-token: ${{ secrets.LVMH_GITHUB_TOKEN }}
           repo-token-user-login: "github-actions[bot]"
-          message: |
-            # Kics details
-            ```diff
-            ${{ env.kics_results }}
-            ```
+          message-path: myResults/results.html
 
       - name: display kics results
         if: ${{ always() }}
