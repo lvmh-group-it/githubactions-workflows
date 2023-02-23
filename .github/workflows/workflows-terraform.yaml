@@ -269,9 +269,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - use: actions/checkout@v3
-        repository: lvmh-group-it/grp-compliance-ci-kics
-        token: ${{ secrets.GITHUB_TOKEN }}
-        path: grp-compliance-ci-kics/
+        with:
+          repository: lvmh-group-it/grp-compliance-ci-kics
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: grp-compliance-ci-kics/
       - uses: actions/download-artifact@v2
         with:
           name: tfplan ${{matrix.tf_dirs}}
