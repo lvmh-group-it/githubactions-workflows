@@ -208,7 +208,7 @@ jobs:
         run: |
           cd ${{ matrix.tf_dirs }} \
           && terraform plan -input=false -no-color -out=/tmp/tfplan \
-          && terraform show -no-color -json tfplan > /tmp/tfplan.json \
+          && terraform show -no-color -json /tmp/tfplan > /tmp/tfplan.json \
           && terraform show -no-color /tmp/tfplan
 
       - name: Reformat Plan
