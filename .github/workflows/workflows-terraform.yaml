@@ -52,7 +52,7 @@ on:
         type: string
         description: kics queries branch
       kics-exclude-queries:
-        # default : https://github.com/Checkmarx/kics/blob/master/assets/queries/common/passwords_and_secrets/regex_rules.json 
+        # default : https://github.com/Checkmarx/kics/blob/master/assets/queries/common/passwords_and_secrets/regex_rules.json
         # Encryption Key exclusion because of self google management
         default: "9fb1cd65-7a07-4531-9bcf-47589d0f82d6"
         type: string
@@ -336,7 +336,7 @@ jobs:
           path: plan
       - name: Create config file
         # creating a heredoc config file
-        # Disable secret detection because it 
+        # Disable secret detection because it
         run: |
           cat <<EOF >>kics.config
           {
@@ -362,8 +362,8 @@ jobs:
           fail_on: ${{ inputs.kics-level-failure }}
           queries: "/app/bin/assets/queries,grp-compliance-ci-kics/assets/queries"
           enable_comments: true
-          exclude_queries:  "${{ inputs.kics-exclude-queries }}"
-          excluded_column_for_comments_with_queries: description_id,similarity_id
+          exclude_queries: "${{ inputs.kics-exclude-queries }}"
+          excluded_column_for_comments_with_queries: ""
 
       - name: display kics results
         run: |
