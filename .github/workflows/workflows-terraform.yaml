@@ -365,9 +365,10 @@ jobs:
           exclude_queries: "${{ inputs.kics-exclude-queries }}"
 
       - name: comment results
-        uses: mshick/add-pr-comment@v1
+        uses: mshick/add-pr-comment@v2
         if: ${{ github.event_name  == 'pull_request' && failure() }}
         with:
+          message-id: kics_details
           allow-repeats: true
           repo-token: ${{ secrets.LVMH_GITHUB_TOKEN }}
           repo-token-user-login: "github-actions[bot]"
