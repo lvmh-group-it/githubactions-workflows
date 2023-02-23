@@ -346,7 +346,6 @@ jobs:
             "no-progress": true,
             "output-path": "myResults/",
             "preview-lines": 5,
-            "report-formats": "json,html",
             "type": "terraform",
             "verbose": true,
             "log-level": "TRACE"
@@ -362,6 +361,7 @@ jobs:
           fail_on: ${{ inputs.kics-level-failure }}
           queries: "/app/bin/assets/queries,grp-compliance-ci-kics/assets/queries"
           enable_comments: true
+          output_formats: "json,html"
           exclude_queries: "${{ inputs.kics-exclude-queries }}"
 
       - name: save results
