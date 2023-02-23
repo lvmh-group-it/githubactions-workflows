@@ -268,7 +268,7 @@ jobs:
         tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
     steps:
       - uses: actions/checkout@v3
-      - use: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           repository: lvmh-group-it/grp-compliance-ci-kics
           token: ${{ secrets.GITHUB_TOKEN }}
