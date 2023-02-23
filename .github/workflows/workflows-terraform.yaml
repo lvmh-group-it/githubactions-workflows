@@ -221,7 +221,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: tfplan
-          path: ${{ github.workspace }}/${{matrix.tf_dirs}}/tfplan.json
+          path: ${{ github.workspace }}/${{hashFiles(matrix.tf_dirs)}}/tfplan.json
 
       - name: Post Plan to GitHub PR
         uses: mshick/add-pr-comment@v1
@@ -269,7 +269,7 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: tfplan 
-          path: ${{ github.workspace }}/${{matrix.tf_dirs}}/tfplan.json
+          path: ${{ github.workspace }}/${{hashFiles(matrix.tf_dirs)}}/tfplan.json
       - name: run kics Scan
         uses: checkmarx/kics-github-action@v1.6
         continue-on-error: ${{ inputs.kics-ignore }}
