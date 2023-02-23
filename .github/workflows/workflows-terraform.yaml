@@ -344,7 +344,6 @@ jobs:
             "minimal-ui": false,
             "no-color": false,
             "no-progress": true,
-            "output-path": "myResults/",
             "preview-lines": 5,
             "type": "terraform",
             "verbose": true,
@@ -361,6 +360,7 @@ jobs:
           fail_on: ${{ inputs.kics-level-failure }}
           queries: "/app/bin/assets/queries,grp-compliance-ci-kics/assets/queries"
           enable_comments: true
+          output_path: myResults/
           output_formats: "json,html"
           exclude_queries: "${{ inputs.kics-exclude-queries }}"
 
