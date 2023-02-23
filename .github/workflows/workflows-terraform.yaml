@@ -343,7 +343,6 @@ jobs:
             "type": "terraform",
             "verbose": true,
             "log-level": "TRACE"
-            "queries-path": "grp-compliance-ci-kics/assets/queries"
           }
           EOF
       - name: run kics Scan
@@ -354,6 +353,7 @@ jobs:
           config_path: ./kics.config
           token: ${{ secrets.LVMH_GITHUB_TOKEN }}
           fail_on: ${{ inputs.kics-level-failure }}
+          queries: "grp-compliance-ci-kics/assets/queries"
           enable_comments: true
 
       - name: display kics results
