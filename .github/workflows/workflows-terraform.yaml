@@ -326,7 +326,7 @@ jobs:
         run: |
           cat plan/tfplan.json
       - name: run kics Scan
-        uses: checkmarx/kics-github-action@1.6
+        uses: checkmarx/kics-github-action@v1.6
         continue-on-error: ${{ inputs.kics-ignore }}
         with:
           path: plan/tfplan.json
