@@ -237,10 +237,14 @@ jobs:
         run: |
           cd ${{ matrix.tf_dirs }} \
           && terraform plan -input=false -no-color -out=/tmp/tfplan \
-          && terraform show -no-color -json /tmp/tfplan > /tmp/tfplan.json \
           && terraform show -no-color /tmp/tfplan
 
-      - name: Reformat Plan
+      - name: Terraform plan json
+        id: plan_json
+        run: |
+          terraform show -no-color -json /tmp/tfplan
+
+      - name: Reformat Plans
         run: |
           echo '${{ steps.plan.outputs.stdout || steps.plan.outputs.stderr }}' \
             | sed -E 's/^([[:space:]]+)([-+])/\2\1/g' > /tmp/plan.txt
@@ -248,11 +252,13 @@ jobs:
           echo "current_plan<<EOF" >> $GITHUB_ENV
           cat /tmp/plan.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
+          echo '${{ steps.plan_json.outputs.stdout }}' > /tmp/tfplan.json
 
       - uses: actions/upload-artifact@v2
         with:
           name: tfplan ${{matrix.tf_dirs}}
           path: /tmp/tfplan.json
+          retention-days: 1
 
       - name: Post Plan to GitHub PR
         uses: mshick/add-pr-comment@v1
@@ -333,7 +339,7 @@ jobs:
             "no-progress": true,
             "output-path": "myResults/",
             "preview-lines": 5,
-            "report-formats": "json,sarif",
+            "report-formats": "json",
             "type": "terraform",
             "verbose": true,
             "log-level": "TRACE"
@@ -349,11 +355,6 @@ jobs:
           token: ${{ secrets.LVMH_GITHUB_TOKEN }}
           fail_on: ${{ inputs.kics-level-failure }}
           enable_comments: true
-
-      - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v1
-        with:
-          sarif_file: myResults/results.sarif
 
       - name: display kics results
         run: |
