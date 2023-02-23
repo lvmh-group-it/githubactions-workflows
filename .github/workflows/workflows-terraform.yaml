@@ -321,15 +321,15 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: tfplan ${{matrix.tf_dirs}}
-          path: ${{ github.workspace }}/tfplan.json
+          path: plan
       - name: debug
         run: |
-          cat ${{ github.workspace }}/tfplan.json
+          cat plan/tfplan.json
       - name: run kics Scan
         uses: checkmarx/kics-github-action@v1.6
         continue-on-error: ${{ inputs.kics-ignore }}
         with:
-          path: ${{ github.workspace }}/tfplan.json,${{matrix.tf_dirs}}
+          path: plan/tfplan.json,${{matrix.tf_dirs}}
           output_path: myResults/
           token: ${{ secrets.LVMH_GITHUB_TOKEN }}
           fail_on: ${{ inputs.kics-level-failure }}
