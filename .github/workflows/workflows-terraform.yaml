@@ -279,6 +279,13 @@ jobs:
     if: needs.setup.outputs.tf_dirs != null && ! inputs.terraform_plan_enable
     steps:
       - uses: actions/checkout@v3
+      - name: pull LVMH queries
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.kics_custom_queries_repo }}
+          token: ${{ secrets.LVMH_GITHUB_TOKEN }}
+          path: grp-compliance-ci-kics/
+          ref: ${{ inputs.kics_custom_queries_branch }}
       - name: run kics Scan
         uses: checkmarx/kics-github-action@v1.6
         continue-on-error: ${{ inputs.kics-ignore }}
@@ -287,6 +294,7 @@ jobs:
           output_path: myResults/
           token: ${{ secrets.LVMH_GITHUB_TOKEN }}
           fail_on: ${{ inputs.kics-level-failure }}
+          queries: grp-compliance-ci-kics/assets/queries
           enable_comments: true
       - name: display kics results
         run: |
@@ -303,7 +311,8 @@ jobs:
         tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/checkout@v3
+      - name: pull LVMH queries
+        uses: actions/checkout@v3
         with:
           repository: ${{ inputs.kics_custom_queries_repo }}
           token: ${{ secrets.LVMH_GITHUB_TOKEN }}
