@@ -322,19 +322,39 @@ jobs:
         with:
           name: tfplan ${{matrix.tf_dirs}}
           path: plan
-      - name: debug
+      - name: Create config file
+        # creating a heredoc config file
         run: |
-          cat plan/tfplan.json
+          cat <<EOF >>kics.config
+          {
+            "path": "plan/tfplan.json"
+            "log-file": true,
+            "minimal-ui": false,
+            "no-color": false,
+            "no-progress": true,
+            "output-path": "myResults/",
+            "preview-lines": 5,
+            "report-formats": "json,sarif",
+            "type": "terraform",
+            "verbose": true,
+            "log-level": "TRACE"
+            "queries-path": "grp-compliance-ci-kics/assets/queries"
+          }
+          EOF
       - name: run kics Scan
         uses: checkmarx/kics-github-action@v1.6
         continue-on-error: ${{ inputs.kics-ignore }}
         with:
-          path: plan/tfplan.json
-          output_path: myResults/
+          config_path: ./kics.config
           token: ${{ secrets.LVMH_GITHUB_TOKEN }}
           fail_on: ${{ inputs.kics-level-failure }}
-         # queries: grp-compliance-ci-kics/assets/queries
           enable_comments: true
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: myResults/results.sarif
+
       - name: display kics results
         run: |
           cat myResults/results.json
