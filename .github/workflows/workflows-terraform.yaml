@@ -362,17 +362,8 @@ jobs:
           enable_comments: true
           output_path: myResults/
           output_formats: "json,html"
+          comments_with_queries: true
           exclude_queries: "${{ inputs.kics-exclude-queries }}"
-
-      - name: comment results
-        uses: mshick/add-pr-comment@v2
-        if: ${{ github.event_name  == 'pull_request' && failure() }}
-        with:
-          message-id: kics_details
-          allow-repeats: true
-          repo-token: ${{ secrets.LVMH_GITHUB_TOKEN }}
-          repo-token-user-login: "github-actions[bot]"
-          message-path: myResults/results.html
 
       - name: display kics results
         if: ${{ always() }}
