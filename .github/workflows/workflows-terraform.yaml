@@ -19,6 +19,44 @@ on:
         default: "Default IaC policy"
         type: string
         description: "policy to use with wiz"
+      terraform_plan_enable:
+        default: false
+        type: boolean
+        description: "Enable terraform plan"
+      terraform_apply_enable:
+        default: false
+        type: boolean
+        description: "Enable terraform auto apply"
+      terraform_cloud_provider:
+        default: null
+        type: string
+        description: "Cloud provider managed by terraform"
+      terraform_vars:
+        default: ""
+        type: string
+        description: "Terraform Vars, exemple : var1=test var2=test2"
+      gcp_project_number:
+        default: null
+        type: string
+        description: "GCP project number"
+      gcp_workload_identity_sac_name:
+        default: null
+        type: string
+        description: "Workload identity service account name"
+      kics_custom_queries_repo:
+        default: "lvmh-group-it/grp-compliance-ci-kics"
+        type: string
+        description: kics queries repository
+      kics_custom_queries_branch:
+        default: "main"
+        type: string
+        description: kics queries branch
+      kics-exclude-queries:
+        # default : https://github.com/Checkmarx/kics/blob/master/assets/queries/common/passwords_and_secrets/regex_rules.json
+        # Encryption Key exclusion because of self google management
+        default: "9fb1cd65-7a07-4531-9bcf-47589d0f82d6"
+        type: string
+        description: kics queries exclusion
     secrets:
       infracost_api_key:
         description: "Infracost api key"
@@ -32,6 +70,12 @@ on:
         description: "Wiz Client Secret sac"
 
 jobs:
+  #########################################################
+  #
+  # Step to list all TF directories live and not live to make matrix after
+  # If it is a PR, get only modify files
+  #
+  #########################################################
   setup:
     runs-on: ubuntu-latest
     outputs:
@@ -70,12 +114,17 @@ jobs:
           live_tf_dirs="$(find ${dirs} \
                              -name '*.tf' \
                              -not -path "*modules*" \
-                             -exec dirname {} \; | sort -u | jq -R | jq -scM )"
+                             -exec grep -l "backend.*{" {} \; | xargs dirname | sort -u | jq -R | jq -scM )"
           echo "tf_dirs=${all_tf_dirs}" 
           echo "live_tf_dirs=${live_tf_dirs}"
           echo "tf_dirs=${all_tf_dirs}" >> $GITHUB_OUTPUT
           echo "live_tf_dirs=${live_tf_dirs}" >> $GITHUB_OUTPUT
 
+  #########################################################
+  #
+  # Simple fmt check to have clean format on tf
+  #
+  #########################################################
   terraform-fmt:
     runs-on: ubuntu-latest
     needs: setup
@@ -95,6 +144,11 @@ jobs:
           cd ${{ matrix.tf_dirs }}
           terraform fmt --check
 
+  #########################################################
+  #
+  # test linting to avoid big errors
+  #
+  #########################################################
   terraform-lint:
     runs-on: ubuntu-latest
     needs: setup
@@ -122,25 +176,232 @@ jobs:
           cd ${{ matrix.tf_dirs }}
           tflint -f compact
 
-  terraform-kics:
+  #########################################################
+  #
+  # if terraform_plan_enable is tru make plan and post in PR discution
+  #
+  #########################################################
+  terraform_plan:
+    name: "Plan Terraform"
     runs-on: ubuntu-latest
     needs: setup
-    if: needs.setup.outputs.tf_dirs != null
+    if: ${{ inputs.terraform_plan_enable }}
+    permissions:
+      contents: "read"
+      id-token: "write"
+    strategy:
+      fail-fast: false
+      matrix:
+        tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: install tfenv
+        run: |
+          git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
+      - name: get tfenv tflint_version
+        run: |
+          cd ${{ matrix.tf_dirs }} 
+          echo "tf_version=$(~/.tfenv/tfenv version-name)" >> $GITHUB_ENV
+
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.tf_version}}
+
+      # Authenticate On providers
+      ## GCP
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v1
+        if: inputs.terraform_cloud_provider == 'gcp'
+        with:
+          workload_identity_provider: projects/${{ inputs.gcp_project_number }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-action-public
+          service_account: ${{ inputs.gcp_workload_identity_sac_name }}
+
+      - name: Configure git
+        run: git config --global url."https://oauth2:${{ secrets.LVMH_GITHUB_TOKEN }}@github.com".insteadOf https://github.com
+
+      - name: Terraform init
+        run: |
+          cd ${{ matrix.tf_dirs }} \
+          && terraform init -input=false -no-color
+
+      - name: set custom terraform vars
+        run: |
+          if [ -n "${{ inputs.terraform_vars }}"]
+          then
+            for vars in ${{ inputs.terraform_vars }}
+            do
+              echo "TF_VAR_$vars" >> $GITHUB_ENV
+            done
+          fi
+
+      - name: Terraform plan
+        id: plan
+        # We run the plan in a distinct command to isolate and ignore the refresh logs
+        run: |
+          cd ${{ matrix.tf_dirs }} \
+          && terraform plan -input=false -no-color -out=/tmp/tfplan \
+          && terraform show -no-color /tmp/tfplan
+
+      - name: Terraform plan json
+        id: plan_json
+        run: |
+          terraform show -no-color -json /tmp/tfplan
+
+      - name: Reformat Plans
+        run: |
+          echo '${{ steps.plan.outputs.stdout || steps.plan.outputs.stderr }}' \
+            | sed -E 's/^([[:space:]]+)([-+])/\2\1/g' > /tmp/plan.txt
+
+          echo "current_plan<<EOF" >> $GITHUB_ENV
+          cat /tmp/plan.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          echo '${{ steps.plan_json.outputs.stdout }}' > /tmp/tfplan.json
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: tfplan ${{matrix.tf_dirs}}
+          path: /tmp/tfplan.json
+          retention-days: 1
+
+      - name: Post Plan to GitHub PR
+        uses: mshick/add-pr-comment@v1
+        if: ${{ github.event_name  == 'pull_request' }}
+        with:
+          allow-repeats: true
+          repo-token: ${{ secrets.LVMH_GITHUB_TOKEN }}
+          repo-token-user-login: "github-actions[bot]"
+          message: |
+            ## ${{ matrix.tf_dirs }} plan
+            ```diff
+            ${{ env.current_plan }}
+            ```
+
+  #########################################################
+  #
+  # Use kics : https://kics.io/ to made compliance
+  # download custom code if needed, see : https://github.com/lvmh-group-it/grp-compliance-ci-kics
+  #
+  #########################################################
+  terraform-kics-base:
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.tf_dirs != null && ! inputs.terraform_plan_enable
     steps:
       - uses: actions/checkout@v3
+      - name: pull LVMH queries
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.kics_custom_queries_repo }}
+          token: ${{ secrets.LVMH_GITHUB_TOKEN }}
+          path: grp-compliance-ci-kics/
+          ref: ${{ inputs.kics_custom_queries_branch }}
+      - name: Create config file
+        # creating a heredoc config file
+        # Disable secret detection because it
+        run: |
+          cat <<EOF >>kics.config
+          {
+            "log-file": true,
+            "minimal-ui": false,
+            "no-color": false,
+            "no-progress": true,
+            "preview-lines": 5,
+            "type": "terraform",
+            "verbose": true,
+            "log-level": "TRACE"
+          }
+          EOF
       - name: run kics Scan
         uses: checkmarx/kics-github-action@v1.6
         continue-on-error: ${{ inputs.kics-ignore }}
         with:
-          path: ${{ join(fromJson(needs.setup.outputs.tf_dirs)) }}
-          output_path: myResults/
-          token: ${{ secrets.GITHUB_TOKEN }}
+          path: "plan/tfplan.json,${{matrix.tf_dirs}}"
+          config_path: ./kics.config
+          token: ${{ secrets.LVMH_GITHUB_TOKEN }}
           fail_on: ${{ inputs.kics-level-failure }}
+          queries: "/app/bin/assets/queries,grp-compliance-ci-kics/assets/queries"
           enable_comments: true
-      - name: display kics results
-        run: |
-          cat myResults/results.json
+          output_path: myResults/
+          output_formats: "json,html"
+          comments_with_queries: true
+          excluded_column_for_comments_with_queries: "description_id,similarity_id,search_line,search_value,query_id,platform,cloud_provider,search_key,category,description,file_name,line,ressource_type,issue_type"
+          exclude_queries: "${{ inputs.kics-exclude-queries }}"
+          exclude_results: "${{ inputs.kics-exclude-queries }}"
 
+      - name: display kics results
+        if: ${{ always() }}
+        run: |
+          cat myResults/results.html
+
+
+  terraform-kics-tfplan:
+    runs-on: ubuntu-latest
+    needs:
+      - setup
+      - terraform_plan
+    strategy:
+      fail-fast: false
+      matrix:
+        tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
+    steps:
+      - uses: actions/checkout@v3
+      - name: pull LVMH queries
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.kics_custom_queries_repo }}
+          token: ${{ secrets.LVMH_GITHUB_TOKEN }}
+          path: grp-compliance-ci-kics/
+          ref: ${{ inputs.kics_custom_queries_branch }}
+      - uses: actions/download-artifact@v2
+        with:
+          name: tfplan ${{matrix.tf_dirs}}
+          path: plan
+      - name: Create config file
+        # creating a heredoc config file
+        # Disable secret detection because it
+        run: |
+          cat <<EOF >>kics.config
+          {
+            "log-file": true,
+            "minimal-ui": false,
+            "no-color": false,
+            "no-progress": true,
+            "preview-lines": 5,
+            "type": "terraform",
+            "verbose": true,
+            "log-level": "TRACE"
+          }
+          EOF
+      - name: run kics Scan
+        uses: checkmarx/kics-github-action@v1.6
+        continue-on-error: ${{ inputs.kics-ignore }}
+        with:
+          path: "plan/tfplan.json,${{matrix.tf_dirs}}"
+          config_path: ./kics.config
+          token: ${{ secrets.LVMH_GITHUB_TOKEN }}
+          fail_on: ${{ inputs.kics-level-failure }}
+          queries: "/app/bin/assets/queries,grp-compliance-ci-kics/assets/queries"
+          enable_comments: true
+          output_path: myResults/
+          output_formats: "json,html"
+          comments_with_queries: true
+          excluded_column_for_comments_with_queries: "description_id,similarity_id,search_line,search_value,query_id,platform,cloud_provider,search_key,category,description,file_name,line,ressource_type,issue_type"
+          exclude_queries: "${{ inputs.kics-exclude-queries }}"
+          exclude_results: "${{ inputs.kics-exclude-queries }}"
+
+      - name: display kics results
+        if: ${{ always() }}
+        run: |
+          cat myResults/results.html
+
+  #########################################################
+  #
+  # generate infrastructure cost
+  #
+  #########################################################
   infracost:
     name: Infracost
     runs-on: ubuntu-latest
@@ -211,6 +472,11 @@ jobs:
                                    --pull-request=${{github.event.pull_request.number}} \
                                    --behavior=update
 
+  #########################################################
+  #
+  # Use wizz for security compliance : https://www.wiz.io/
+  #
+  #########################################################
   wiz-cli-iac-scan:
     name: "Wiz-cli IaC Scan"
     runs-on: ubuntu-latest
