@@ -327,7 +327,7 @@ jobs:
           output_path: myResults/
           output_formats: "json,html"
           comments_with_queries: true
-          excluded_column_for_comments_with_queries: "description_id,similarity_id,search_line,search_value,query_id,platform,cloud_provider,search_key"
+          excluded_column_for_comments_with_queries: "description_id,similarity_id,search_line,search_value,query_id,platform,cloud_provider,search_key,category,description,file_name,line,ressource_type,issue_type"
           exclude_queries: "${{ inputs.kics-exclude-queries }}"
           exclude_results: "${{ inputs.kics-exclude-queries }}"
 
@@ -388,7 +388,7 @@ jobs:
           output_path: myResults/
           output_formats: "json,html"
           comments_with_queries: true
-          excluded_column_for_comments_with_queries: "description_id,similarity_id,search_line,search_value,query_id,platform,cloud_provider,search_key"
+          excluded_column_for_comments_with_queries: "description_id,similarity_id,search_line,search_value,query_id,platform,cloud_provider,search_key,category,description,file_name,line,ressource_type,issue_type"
           exclude_queries: "${{ inputs.kics-exclude-queries }}"
           exclude_results: "${{ inputs.kics-exclude-queries }}"
 
