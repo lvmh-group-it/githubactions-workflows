@@ -329,6 +329,7 @@ jobs:
           comments_with_queries: true
           excluded_column_for_comments_with_queries: "description_id,similarity_id,search_line,search_value,query_id,platform,cloud_provider,search_key"
           exclude_queries: "${{ inputs.kics-exclude-queries }}"
+          exclude_results: "${{ inputs.kics-exclude-queries }}"
 
       - name: display kics results
         if: ${{ always() }}
@@ -389,6 +390,7 @@ jobs:
           comments_with_queries: true
           excluded_column_for_comments_with_queries: "description_id,similarity_id,search_line,search_value,query_id,platform,cloud_provider,search_key"
           exclude_queries: "${{ inputs.kics-exclude-queries }}"
+          exclude_results: "${{ inputs.kics-exclude-queries }}"
 
       - name: display kics results
         if: ${{ always() }}
