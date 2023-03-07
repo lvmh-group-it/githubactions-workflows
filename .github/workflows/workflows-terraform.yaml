@@ -309,7 +309,6 @@ jobs:
             "no-color": false,
             "no-progress": true,
             "preview-lines": 5,
-            "type": "terraform",
             "verbose": true,
             "log-level": "TRACE"
           }
@@ -318,7 +317,7 @@ jobs:
         uses: checkmarx/kics-github-action@v1.6
         continue-on-error: ${{ inputs.kics-ignore }}
         with:
-          path: "${{matrix.tf_dirs}}"
+          path: ${{ inputs.working_directory }}
           config_path: ./kics.config
           token: ${{ secrets.LVMH_GITHUB_TOKEN }}
           fail_on: ${{ inputs.kics-level-failure }}
