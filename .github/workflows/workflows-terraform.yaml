@@ -264,8 +264,8 @@ jobs:
       - name: Prepare artifact name
         run: |
           # Remove special characters from the artifact name
-          plan_artifact_name=$(echo -n "tfplan ${{ matrix.tf_dirs }}" | sed -e 's/[^a-zA-Z0-0_-]/-/g' -e 's/--*/-/g')
-          echo "PLAN_ARTIFACT_NAME=$artifact_name" >> $GITHUB_ENV
+          plan_artifact_name=$(echo -n "tfplan ${{ matrix.tf_dirs }}" | sed -e 's/[^a-zA-Z0-9_-]/-/g' -e 's/--*/-/g')
+          echo "PLAN_ARTIFACT_NAME=$plan_artifact_name" >> $GITHUB_ENV
 
       - uses: actions/upload-artifact@v3
         with:
@@ -364,8 +364,8 @@ jobs:
       - name: Prepare artifact name
         run: |
           # Remove special characters from the artifact name
-          plan_artifact_name=$(echo -n "tfplan ${{ matrix.tf_dirs }}" | sed -e 's/[^a-zA-Z0-0_-]/-/g' -e 's/--*/-/g')
-          echo "PLAN_ARTIFACT_NAME=$artifact_name" >> $GITHUB_ENV
+          plan_artifact_name=$(echo -n "tfplan ${{ matrix.tf_dirs }}" | sed -e 's/[^a-zA-Z0-9_-]/-/g' -e 's/--*/-/g')
+          echo "PLAN_ARTIFACT_NAME=$plan_artifact_name" >> $GITHUB_ENV
 
       - uses: actions/download-artifact@v3
         with:
