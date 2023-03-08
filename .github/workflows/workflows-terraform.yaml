@@ -248,6 +248,7 @@ jobs:
       - name: Terraform plan json
         id: plan_json
         run: |
+          cd ${{ matrix.tf_dirs }} \
           terraform show -no-color -json /tmp/tfplan
 
       - name: Reformat Plans
@@ -334,7 +335,6 @@ jobs:
         if: ${{ always() }}
         run: |
           cat myResults/results.html
-
 
   terraform-kics-tfplan:
     runs-on: ubuntu-latest
