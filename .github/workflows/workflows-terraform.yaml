@@ -261,9 +261,15 @@ jobs:
           echo "EOF" >> $GITHUB_ENV
           echo '${{ steps.plan_json.outputs.stdout }}' > /tmp/tfplan.json
 
-      - uses: actions/upload-artifact@v2
+      - name: Prepare artifact name
+        run: |
+          # Remove special characters from the artifact name
+          plan_artifact_name=$(echo -n "tfplan ${{ matrix.tf_dirs }}" | sed -e 's/[^a-zA-Z0-0_-]/-/g' -e 's/--*/-/g')
+          echo "PLAN_ARTIFACT_NAME=$artifact_name" >> $GITHUB_ENV
+
+      - uses: actions/upload-artifact@v3
         with:
-          name: tfplan ${{matrix.tf_dirs}}
+          name: ${{ env.PLAN_ARTIFACT_NAME }}
           path: /tmp/tfplan.json
           retention-days: 1
 
@@ -354,10 +360,18 @@ jobs:
           token: ${{ secrets.LVMH_GITHUB_TOKEN }}
           path: grp-compliance-ci-kics/
           ref: ${{ inputs.kics_custom_queries_branch }}
-      - uses: actions/download-artifact@v2
+
+      - name: Prepare artifact name
+        run: |
+          # Remove special characters from the artifact name
+          plan_artifact_name=$(echo -n "tfplan ${{ matrix.tf_dirs }}" | sed -e 's/[^a-zA-Z0-0_-]/-/g' -e 's/--*/-/g')
+          echo "PLAN_ARTIFACT_NAME=$artifact_name" >> $GITHUB_ENV
+
+      - uses: actions/download-artifact@v3
         with:
-          name: tfplan ${{matrix.tf_dirs}}
+          name: ${{ env.PLAN_ARTIFACT_NAME }}
           path: plan
+
       - name: Create config file
         # creating a heredoc config file
         # Disable secret detection because it
@@ -374,6 +388,7 @@ jobs:
             "log-level": "TRACE"
           }
           EOF
+
       - name: run kics Scan
         uses: checkmarx/kics-github-action@v1.6
         continue-on-error: ${{ inputs.kics-ignore }}
