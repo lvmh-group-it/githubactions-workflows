@@ -229,7 +229,7 @@ jobs:
 
       - name: set custom terraform vars
         run: |
-          if [ -n "${{ inputs.terraform_vars }}"]
+          if [ -n "${{ inputs.terraform_vars }}" ]
           then
             for vars in ${{ inputs.terraform_vars }}
             do
