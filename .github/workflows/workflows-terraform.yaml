@@ -202,7 +202,7 @@ jobs:
       - name: get tfenv tflint_version
         run: |
           cd ${{ matrix.tf_dirs }} 
-          echo "tf_version=$(~/.tfenv/tfenv version-name)" >> $GITHUB_ENV
+          echo "tf_version=$(~/.tfenv/bin/tfenv version-name)" >> $GITHUB_ENV
 
       - name: Setup terraform
         uses: hashicorp/setup-terraform@v2
