@@ -260,7 +260,7 @@ jobs:
           cat /tmp/plan.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
           cat << EOP > /tmp/tfplan.json
-          '${{ steps.plan_json.outputs.stdout }}'
+          ${{ steps.plan_json.outputs.stdout }}
           EOP
 
       - name: Prepare artifact name
