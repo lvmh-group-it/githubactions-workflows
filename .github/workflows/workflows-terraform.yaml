@@ -259,7 +259,9 @@ jobs:
           echo "current_plan<<EOF" >> $GITHUB_ENV
           cat /tmp/plan.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-          echo '${{ steps.plan_json.outputs.stdout }}' > /tmp/tfplan.json
+          cat << EOP > /tmp/tfplan.json
+          '${{ steps.plan_json.outputs.stdout }}'
+          EOP
 
       - name: Prepare artifact name
         run: |
