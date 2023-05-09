@@ -249,7 +249,7 @@ jobs:
         id: plan_json
         run: |
           cd ${{ matrix.tf_dirs }} \
-          && terraform show -no-color -json /tmp/tfplan | sed '1d;s/\\\\,/,/g' > /tmp/tfplan.json
+          && terraform-bin show -no-color -json /tmp/tfplan | sed 's/\\\\,/,/g' > /tmp/tfplan.json
 
       - name: Reformat Plans
         run: |
