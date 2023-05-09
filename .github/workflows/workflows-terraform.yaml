@@ -249,9 +249,7 @@ jobs:
         id: plan_json
         run: |
           cd ${{ matrix.tf_dirs }} \
-          && cat << EOFEOP > /tmp/tfplan.json
-          $(terraform show -no-color -json /tmp/tfplan | sed 's/\\\\,/,/g')
-          EOFEOP
+          && terraform show -no-color -json /tmp/tfplan | sed 's/\\\\,/,/g' > /tmp/tfplan.json
 
       - name: Reformat Plans
         run: |
