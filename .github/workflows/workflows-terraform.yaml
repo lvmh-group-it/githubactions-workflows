@@ -249,7 +249,9 @@ jobs:
         id: plan_json
         run: |
           cd ${{ matrix.tf_dirs }} \
-          && terraform show -no-color -json /tmp/tfplan | sed 's/\\\\,/,/g'
+          && cat << EOFEOP > /tmp/tfplan.json
+          $(terraform show -no-color -json /tmp/tfplan | sed 's/\\\\,/,/g')
+          EOFEOP
 
       - name: Reformat Plans
         run: |
@@ -259,9 +261,6 @@ jobs:
           echo "current_plan<<EOF" >> $GITHUB_ENV
           cat /tmp/plan.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-          cat << EOFEOP > /tmp/tfplan.json
-          ${{ steps.plan_json.outputs.stdout }}
-          EOFEOP
 
       - name: Prepare artifact name
         run: |
