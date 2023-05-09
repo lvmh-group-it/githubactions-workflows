@@ -159,7 +159,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         name: Cache plugin dir
         with:
           path: ~/.tflint.d/plugins
@@ -249,7 +249,7 @@ jobs:
         id: plan_json
         run: |
           cd ${{ matrix.tf_dirs }} \
-          && terraform show -no-color -json /tmp/tfplan | sed 's/\\\\,/,/g' > /tmp/tfplan.json
+          && terraform show -no-color -json /tmp/tfplan | sed '1d;s/\\\\,/,/g' > /tmp/tfplan.json
 
       - name: Reformat Plans
         run: |
@@ -507,7 +507,7 @@ jobs:
     steps:
       # Checkout the repository to the GitHub Actions runner
       - name: Check out repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: ${{ env.WIZ_CLIENT_ID != null }}
 
       - name: Download Wiz-cli
