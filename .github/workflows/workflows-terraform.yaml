@@ -274,7 +274,7 @@ jobs:
 
       - name: Post Plan to GitHub PR
         uses: mshick/add-pr-comment@v1
-        if: ${{ github.event_name  == 'pull_request' }}
+        if: github.event_name  == 'pull_request'
         with:
           allow-repeats: true
           repo-token: ${{ secrets.LVMH_GITHUB_TOKEN }}
@@ -337,7 +337,7 @@ jobs:
           exclude_results: "${{ inputs.kics-exclude-queries }}"
 
       - name: display kics results
-        if: ${{ always() }}
+        if: always()
         run: |
           cat myResults/results.html
 
@@ -406,7 +406,7 @@ jobs:
           exclude_results: "${{ inputs.kics-exclude-queries }}"
 
       - name: display kics results
-        if: ${{ always() }}
+        if: always()
         run: |
           cat myResults/results.html
 
@@ -508,16 +508,16 @@ jobs:
       # Checkout the repository to the GitHub Actions runner
       - name: Check out repository
         uses: actions/checkout@v3
-        if: ${{ env.WIZ_CLIENT_ID != null }}
+        if: env.WIZ_CLIENT_ID != null
 
       - name: Download Wiz-cli
         run: curl -o wizcli https://wizcli.app.wiz.io/wizcli && chmod +x wizcli
-        if: ${{ env.WIZ_CLIENT_ID != null }}
+        if: env.WIZ_CLIENT_ID != null
 
       - name: Authenticate to Wiz
         run: ./wizcli auth --id "$WIZ_CLIENT_ID" --secret "$WIZ_CLIENT_SECRET"
-        if: ${{ env.WIZ_CLIENT_ID != null }}
+        if: env.WIZ_CLIENT_ID != null
 
       - name: Run wiz-cli IaC scan
         run: ./wizcli iac scan --path $SCAN_PATH --policy "$POLICY"
-        if: ${{ env.WIZ_CLIENT_ID != null }}
+        if: env.WIZ_CLIENT_ID != null
