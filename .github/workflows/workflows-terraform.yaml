@@ -320,7 +320,7 @@ jobs:
           }
           EOF
       - name: run kics Scan
-        uses: checkmarx/kics-github-action@vv1.7.0
+        uses: checkmarx/kics-github-action@v1.7.0
         continue-on-error: ${{ inputs.kics-ignore }}
         with:
           path: ${{ inputs.working_directory }}
@@ -389,7 +389,7 @@ jobs:
           EOF
 
       - name: run kics Scan
-        uses: checkmarx/kics-github-action@vv1.7.0
+        uses: checkmarx/kics-github-action@v1.7.0
         continue-on-error: ${{ inputs.kics-ignore }}
         with:
           path: "plan/tfplan.json,${{matrix.tf_dirs}}"
