@@ -26,7 +26,15 @@ on:
       terraform_apply_enable:
         default: false
         type: boolean
-        description: "Enable terraform auto apply"
+        description: "Enable terraform auto apply, see environment for setting env"
+      environment:
+        default: "default_env"
+        type: string
+        description: "Environment for apply section"
+      environment_url:
+        default: "null"
+        type: string
+        description: "Environment url for apply sectiony"
       terraform_cloud_provider:
         default: null
         type: string
@@ -237,6 +245,10 @@ jobs:
             done
           fi
 
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+
       - name: Terraform plan
         id: plan
         # We run the plan in a distinct command to isolate and ignore the refresh logs
@@ -409,6 +421,61 @@ jobs:
         if: always()
         run: |
           cat myResults/results.html
+
+  terraform-apply:
+    runs-on: ubuntu-latest
+    needs: 
+      - setup
+      - terraform_plan
+      - terraform-kics-tfplan
+    if: ${{ inputs.terraform_apply_enable }}
+    environment:
+      name: inputs.environment
+      url: inputs.environment_url
+    steps:
+      - name: install tfenv
+        run: |
+          git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
+      - name: get tfenv tflint_version
+        run: |
+          cd ${{ matrix.tf_dirs }} 
+          echo "tf_version=$(~/.tfenv/bin/tfenv version-name)" >> $GITHUB_ENV
+
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.tf_version}}
+
+      # Authenticate On providers
+      ## GCP
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v1
+        if: inputs.terraform_cloud_provider == 'gcp'
+        with:
+          workload_identity_provider: projects/${{ inputs.gcp_project_number }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-action-public
+          service_account: ${{ inputs.gcp_workload_identity_sac_name }}
+
+      - name: Configure git
+        run: git config --global url."https://oauth2:${{ secrets.LVMH_GITHUB_TOKEN }}@github.com".insteadOf https://github.com
+
+      - name: Terraform init
+        run: |
+          cd ${{ matrix.tf_dirs }} \
+          && terraform init -input=false -no-color
+
+      - name: set custom terraform vars
+        run: |
+          if [ -n "${{ inputs.terraform_vars }}" ]
+          then
+            for vars in ${{ inputs.terraform_vars }}
+            do
+              echo "TF_VAR_$vars" >> $GITHUB_ENV
+            done
+          fi
+      - name: Terraform apply
+        run: |
+          terraform apply -auto-approve -no-color
 
   #########################################################
   #
