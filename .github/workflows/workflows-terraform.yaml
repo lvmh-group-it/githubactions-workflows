@@ -429,6 +429,9 @@ jobs:
       - terraform_plan
       - terraform-kics-tfplan
     if: ${{ inputs.terraform_apply_enable }}
+    permissions:
+      contents: "read"
+      id-token: "write"
     environment:
       name: inputs.environment
       url: inputs.environment_url
