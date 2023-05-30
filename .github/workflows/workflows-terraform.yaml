@@ -428,13 +428,17 @@ jobs:
       - setup
       - terraform_plan
       - terraform-kics-tfplan
-    if: ${{ inputs.terraform_apply_enable }}
+    if:  needs.setup.outputs.live_tf_dirs != '' && needs.setup.outputs.live_tf_dirs != '[]' && inputs.terraform_apply_enable
     permissions:
       contents: "read"
       id-token: "write"
     environment:
       name: inputs.environment
       url: inputs.environment_url
+    strategy:
+      fail-fast: false
+      matrix:
+        tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
     steps:
       - name: install tfenv
         run: |
@@ -478,6 +482,7 @@ jobs:
           fi
       - name: Terraform apply
         run: |
+          cd ${{ matrix.tf_dirs }} \
           terraform apply -auto-approve -no-color
 
   #########################################################
