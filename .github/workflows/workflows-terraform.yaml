@@ -433,8 +433,8 @@ jobs:
       contents: "read"
       id-token: "write"
     environment:
-      name: inputs.environment
-      url: inputs.environment_url
+      name: ${{ inputs.environment }}
+      url: ${{ inputs.environment_url }}
     strategy:
       fail-fast: false
       matrix:
