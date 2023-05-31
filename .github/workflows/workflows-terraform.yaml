@@ -484,7 +484,7 @@ jobs:
           fi
       - name: Terraform apply
         run: |
-          cd ${{ matrix.tf_dirs }} \
+          cd ${{ matrix.tf_dirs }} && \
           terraform apply -auto-approve -no-color
 
   #########################################################
