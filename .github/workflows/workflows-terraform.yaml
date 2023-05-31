@@ -207,7 +207,7 @@ jobs:
       - name: install tfenv
         run: |
           git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
-      - name: get tfenv tflint_version
+      - name: get tfenv version
         run: |
           cd ${{ matrix.tf_dirs }} 
           echo "tf_version=$(~/.tfenv/bin/tfenv version-name)" >> $GITHUB_ENV
@@ -445,7 +445,7 @@ jobs:
       - name: install tfenv
         run: |
           git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
-      - name: get tfenv tflint_version
+      - name: get tfenv version
         run: |
           cd ${{ matrix.tf_dirs }} 
           echo "tf_version=$(~/.tfenv/bin/tfenv version-name)" >> $GITHUB_ENV
