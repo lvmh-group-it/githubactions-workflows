@@ -440,6 +440,8 @@ jobs:
       matrix:
         tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: install tfenv
         run: |
           git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
