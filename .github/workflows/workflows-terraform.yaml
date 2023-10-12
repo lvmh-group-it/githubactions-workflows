@@ -269,9 +269,11 @@ jobs:
           echo '${{ steps.plan.outputs.stdout || steps.plan.outputs.stderr }}' \
             | sed -E 's/^([[:space:]]+)([-+])/\2\1/g' > /tmp/plan.txt
 
-          echo "current_plan<<EOF" >> $GITHUB_ENV
-          cat /tmp/plan.txt >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          {
+          echo 'current_plan<<EOF'
+          cat /tmp/plan.txt
+          echo EOF
+          } >> "$GITHUB_ENV"
 
       - name: Prepare artifact name
         run: |
