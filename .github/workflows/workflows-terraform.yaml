@@ -197,6 +197,7 @@ jobs:
     permissions:
       contents: "read"
       id-token: "write"
+      pull-requests: write
     strategy:
       fail-fast: false
       matrix:
@@ -285,7 +286,7 @@ jobs:
           retention-days: 1
 
       - name: Post Plan to GitHub PR
-        uses: mshick/add-pr-comment@v1
+        uses: mshick/add-pr-comment@v2
         if: github.event_name  == 'pull_request'
         with:
           allow-repeats: true
