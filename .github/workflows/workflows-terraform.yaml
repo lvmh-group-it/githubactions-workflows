@@ -405,7 +405,7 @@ jobs:
         uses: checkmarx/kics-github-action@v1.7.0
         continue-on-error: ${{ inputs.kics-ignore }}
         with:
-          path: "plan/tfplan.json,${{matrix.tf_dirs}}"
+          path: "plan/tfplan.json"
           config_path: ./kics.config
           token: ${{ secrets.LVMH_GITHUB_TOKEN }}
           fail_on: ${{ inputs.kics-level-failure }}
