@@ -1,0 +1,424 @@
+name: "GCP Terraform check"
+
+on:
+  workflow_call:
+    inputs:
+      working_directory:
+        default: "terraform"
+        type: string
+        description: "Terraform working directory"
+      terraform_vars:
+        default: ""
+        type: string
+        description: "Terraform Vars, example : var1=test var2=test2"
+      gcp_project_number:
+        default: null
+        type: string
+        description: "GCP project number"
+      gcp_workload_identity_sac_name:
+        default: null
+        type: string
+        description: "Workload identity service account name"
+      artifact_name_prefix:
+        default: null
+        type: string
+        description: "Prefix for the artifact name"
+      open_issue_on_failure:
+        default: true
+        type: boolean
+        description: "Open issue when terraform fails"
+      open_issue_on_drift:
+        default: true
+        type: boolean
+        description: "Open issue when terraform plan has drifts"
+      debug_enabled:
+        default: false
+        type: boolean
+        description: "Enable debug steps"
+    secrets:
+      LVMH_GITHUB_TOKEN:
+        description: "Token for get token"
+        required: true
+
+jobs:
+  check:
+    name: "Check Terraform"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write"
+    continue-on-error: true
+    outputs:
+      summary: "${{ steps.outputs.outputs.summary }}"
+      init_log: "${{ steps.outputs.outputs.init_log }}"
+      plan_log: "${{ steps.outputs.outputs.plan_log }}"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: install tfenv
+        run: |
+          git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
+
+      - name: get tfenv version
+        run: |
+          cd ${{ inputs.working_directory}}
+          echo "tf_version=$(~/.tfenv/bin/tfenv version-name)" >> $GITHUB_ENV
+
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.tf_version }}
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/${{ inputs.gcp_project_number }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-action-public
+          service_account: ${{ inputs.gcp_workload_identity_sac_name }}
+
+      - name: Configure git
+        run: git config --global url."https://oauth2:${{ secrets.LVMH_GITHUB_TOKEN }}@github.com".insteadOf https://github.com
+
+      - name: Prepare variables
+        run: |
+          # Generate a deployment_name from the terraform working directory.
+          # - if the dir is terraform/[something], only keep [something]
+          # - remove the trailing /
+          # - convert / to _
+          # - remove duplicated _
+          deployment_name=$(echo "${{ inputs.working_directory}}" | sed -E "s|^terraform/(.+)$|\1|" | sed 's|/$||g' | sed 's|/|_|g' | sed 's|__+|_|g')
+
+          if [ -z "${{ inputs.artifact_name_prefix }}" ] ; then
+            artifact_name_prefix=terraform-check-$(date +"%Y%m%d-%H%M%S")
+          else
+            artifact_name_prefix="${{ inputs.artifact_name_prefix }}"
+          fi
+
+          ARTIFACT_NAME=${artifact_name_prefix}-${deployment_name}
+          echo "Using ARTIFACT_NAME: ${ARTIFACT_NAME}"
+          echo "ARTIFACT_NAME=${ARTIFACT_NAME}" >> $GITHUB_ENV
+
+          OUTPUT_DIR=$(mktemp -d /tmp/${ARTIFACT_NAME}.XXXXXX)
+          echo "Using OUTPUT_DIR: ${OUTPUT_DIR}"
+          echo "OUTPUT_DIR=${OUTPUT_DIR}" >> $GITHUB_ENV
+
+      - name: Terraform init
+        id: tf_init
+        run: |
+          set -o pipefail
+          cd ${{ inputs.working_directory}}
+          terraform init -input=false -no-color | tee ${OUTPUT_DIR}/tf_init.log
+
+      - name: Set custom terraform vars
+        run: |
+          if [ -n "${{ inputs.terraform_vars }}" ]
+          then
+            for vars in ${{ inputs.terraform_vars }}
+            do
+              echo "TF_VAR_$vars" >> $GITHUB_ENV
+            done
+          fi
+
+      - name: Generate terraform versions
+        id: tf_version
+        run: |
+          cd ${{ inputs.working_directory}}
+
+          # Show versions in step output
+          terraform version
+
+          # Save JSON for future use
+          terraform version --json > ${OUTPUT_DIR}/tf_version.json
+
+      - name: Terraform plan
+        id: tf_plan
+        run: |
+          cd ${{ inputs.working_directory}}
+          # Generate plan
+          terraform plan -input=false -no-color -out=${OUTPUT_DIR}/tf_plan | tee ${OUTPUT_DIR}/tf_plan.log
+
+          # Show plan in step output
+          terraform show -no-color ${OUTPUT_DIR}/tf_plan
+
+          # Save JSON for future use
+          terraform show -no-color -json ${OUTPUT_DIR}/tf_plan > ${OUTPUT_DIR}/tf_plan.json
+
+      - name: Generate summary
+        id: summary
+        if: success() || failure()
+        run: |
+          echo "Extracting drifts:"
+          cat ${OUTPUT_DIR}/tf_plan.json | jq -r  '.resource_changes[] | select(any(.change.actions[]; IN("update","create","delete"))) | .address as $address | .change.actions[] | [., $address] | @csv' 
+
+          tf_drift_counts=$(cat ${OUTPUT_DIR}/tf_plan.json | jq -r '.resource_changes[] | select(any(.change.actions[]; IN("update","create","delete"))) | .address as $address | .change.actions[] | [., $address] | @csv' | wc -l)
+
+          echo "Generating summary"
+          cat <<EOF > ${OUTPUT_DIR}/summary.json
+          {
+            "repository": "${{ github.repository }}",
+            "folder": "${{ inputs.working_directory }}",
+            "auth_status": "${{ steps.auth.outcome }}",
+            "init_status": "${{ steps.tf_init.outcome }}",
+            "tf_version_status": "${{ steps.tf_version.outcome }}",
+            "tf_plan_status": "${{ steps.tf_plan.outcome }}",
+            "tf_drift_counts": "${tf_drift_counts}"
+          }
+          EOF
+
+      - name: Generate outputs
+        id: outputs
+        if: success() || failure()
+        run: |
+          echo "summary=$(cat ${OUTPUT_DIR}/summary.json | jq '. | tojson')" >> "$GITHUB_OUTPUT"
+
+          if [ -f ${OUTPUT_DIR}/tf_init.log ] ; then
+            echo "Adding tf_init.log to the outputs"
+            {
+              echo 'init_log<<EOF'
+              cat ${OUTPUT_DIR}/tf_init.log
+              echo EOF
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "No tf_init.log to add"
+            echo "init_log=" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ -f ${OUTPUT_DIR}/tf_plan.log ] ; then
+            echo "Adding tf_plan.log to the outputs"
+            {
+              echo 'plan_log<<EOF'
+              cat ${OUTPUT_DIR}/tf_plan.log
+              echo EOF
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "No plan_log.log to add"
+            echo "plan_log=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Debug
+        if: (success() || failure()) && inputs.debug_enabled
+        run: |
+          echo "===================================================================================================="
+          if [ "${{ steps.auth.outcome }}" == "success" ] ; then
+            echo "Auth is OK"
+          else
+            echo "Auth is KO"
+          fi
+          echo "===================================================================================================="
+
+          echo "===================================================================================================="
+          if [ "${{ steps.tf_init.outcome }}" == "success" ] ; then
+            echo "Init is OK"
+          else
+            echo "Init is KO"
+          fi
+          echo "Init output:"
+          cat ${OUTPUT_DIR}/tf_init.log
+          echo "===================================================================================================="
+
+          echo "===================================================================================================="
+          if [ "${{ steps.tf_version.outcome }}" == "success" ] ; then
+            echo "Version is OK"
+          else
+            echo "Version is KO"
+          fi
+          echo "Version output:"
+          cat ${OUTPUT_DIR}/tf_version.json
+          echo "===================================================================================================="
+
+          echo "===================================================================================================="
+          if [ "${{ steps.tf_plan.outcome }}" == "success" ] ; then
+            echo "Plan is OK"
+          else
+            echo "Plan is KO"
+          fi
+
+          echo "Plan log:"
+          cat ${OUTPUT_DIR}/tf_plan.log
+
+          echo "Plan output:"
+          cat ${OUTPUT_DIR}/tf_plan.json
+          echo "===================================================================================================="
+
+          echo "===================================================================================================="
+          echo "Summary:"
+          cat ${OUTPUT_DIR}/summary.json
+          echo "===================================================================================================="
+
+      - uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.OUTPUT_DIR }}
+          retention-days: 1
+
+  issue:
+    name: "Manage issues"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write"
+      issues: write
+    needs: check
+    if: ${{ always() }}
+    steps:
+      - name: Debug summary
+        if: ${{ inputs.debug_enabled }}
+        run: |
+          echo '${{ needs.check.outputs.summary }}' | jq '. | fromjson'
+
+      - name: Debug issues
+        if: ${{ inputs.debug_enabled }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh --repo ${{ github.repository }} issue list --state open --search "[Terraform Check] in:title" --json number,title | jq -r '.[] | [.number, .title] | @csv' | while read line; do
+            issue_number=$(echo $line | cut -d, -f1)
+            issue_title=$(echo $line | cut -d, -f2-)
+
+            echo "Issue #${issue_number} : ${issue_title}"
+          done
+
+      - name: Manage issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo '${{ needs.check.outputs.summary }}' | jq '. | fromjson' > /tmp/summary.json
+
+          terraform_folder=$(cat /tmp/summary.json | jq -r '.folder')
+          auth_status=$(cat /tmp/summary.json | jq -r '.auth_status')
+          init_status=$(cat /tmp/summary.json | jq -r '.init_status')
+          tf_plan_status=$(cat /tmp/summary.json | jq -r '.tf_plan_status')
+          tf_drift_counts=$(cat /tmp/summary.json | jq -r '.tf_drift_counts')
+
+          issue_title_prefix="[Terraform Check]"
+          expected_issue=""
+          if [ "${auth_status}" != "success" ] ; then
+            echo "Authentication failure detected (${auth_status})"
+            expected_issue="Authentication failed"
+            
+            if [ "${{ inputs.open_issue_on_failure }}" == "true" ] ; then
+              should_create_issue=1
+            else
+              should_create_issue=0
+            fi
+
+            cat <<EOF > /tmp/issue-body.md
+          # ${issue_title_prefix} ${expected_issue} in ${terraform_folder}
+
+          The gcloud authentication step has failed
+
+          Look at the action logs for more details.
+          EOF
+
+          elif [ "${init_status}" != "success" ] ; then
+            echo "Init failure detected (${init_status})"
+            expected_issue="Terraform init failed"
+            
+            if [ "${{ inputs.open_issue_on_failure }}" == "true" ] ; then
+              should_create_issue=1
+            else
+              should_create_issue=0
+            fi
+
+            cat <<EOF > /tmp/issue-body.md
+          # ${issue_title_prefix} ${expected_issue} in ${terraform_folder}
+
+          The \`terraform init\` command failed.
+
+          <details>
+            <summary>Logs</summary>
+            
+            \`\`\`text
+            ${{ needs.check.outputs.init_log }}
+            \`\`\`
+          </details>
+
+          EOF
+
+          elif [ "${tf_plan_status}" != "success" ] ; then
+            echo "Plan failure detected (${tf_plan_status})"
+            expected_issue="Terraform plan failed"
+            
+            if [ "${{ inputs.open_issue_on_failure }}" == "true" ] ; then
+              should_create_issue=1
+            else
+              should_create_issue=0
+            fi
+
+            cat <<EOF > /tmp/issue-body.md
+          # ${issue_title_prefix} ${expected_issue} in ${terraform_folder}
+
+          The \`terraform plan\` command failed.
+
+          <details>
+            <summary>Logs</summary>
+            
+            \`\`\`text
+            ${{ needs.check.outputs.plan_log }}
+            \`\`\`
+          </details>
+
+          EOF
+          elif [ "${tf_drift_counts}" -ne 0 ] ; then
+            echo "Drifts detected (${tf_drift_counts})"
+            expected_issue="Terraform drifts detected"
+            
+            if [ "${{ inputs.open_issue_on_drift }}" == "true" ] ; then
+              should_create_issue=1
+            else
+              should_create_issue=0
+            fi
+
+            cat <<EOF > /tmp/issue-body.md
+          # ${issue_title_prefix} ${expected_issue} in ${terraform_folder}
+
+          The \`terraform plan\` has ${tf_drift_counts} drifts.
+
+          <details>
+            <summary>Logs</summary>
+            
+            \`\`\`text
+            ${{ needs.check.outputs.plan_log }}
+            \`\`\`
+          </details>
+
+          EOF
+          fi
+
+          expected_issue_found=0
+
+          mkfifo issues_pipe
+          gh --repo ${{ github.repository }} issue list --state open --search "${issue_title_prefix} in:title ${terraform_folder} in:title" --json number,title | jq -r '.[] | [.number, .title] | @csv' > issues_pipe &
+
+          while read line; do
+            issue_number=$(echo $line | cut -d, -f1)
+            issue_title=$(echo $line | cut -d, -f2-)
+
+            echo "Issue #${issue_number} : ${issue_title}"
+
+            if [ -z "${expected_issue}" ] ; then
+              echo " - no expected issue, closing"
+              gh --repo ${{ github.repository }} issue close ${issue_number} --comment "Issue has been resolved."
+            else
+              echo "${issue_title}" | grep -q --fixed-strings "${issue_title_prefix} ${expected_issue}"
+              if [ $? -eq 0 ] ; then
+                echo " - expecting issue detected, adding comment"
+                gh --repo ${{ github.repository }} issue comment ${issue_number} --body-file /tmp/issue-body.md
+                expected_issue_found=1
+              else
+                echo " - other issue found, closing"
+                gh --repo ${{ github.repository }} issue close ${issue_number} --comment "Something else is broken now."
+              fi
+            fi
+          done < issues_pipe
+
+          if [ ! -z "${expected_issue}" -a ${expected_issue_found} -eq 0 ] ; then
+            if [ ${should_create_issue} -eq 1 ] ; then
+              echo "Expected issue not found, creating"
+              gh --repo ${{ github.repository }} issue create --title "${issue_title_prefix} ${expected_issue} in ${terraform_folder}" --body-file /tmp/issue-body.md
+            else
+              echo "Expected issue not found, but issue creation is disabled, skipping"
+            fi
+          fi
