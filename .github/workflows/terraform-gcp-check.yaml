@@ -39,6 +39,9 @@ on:
       LVMH_GITHUB_TOKEN:
         description: "Token for get token"
         required: true
+      terraform_vars:
+        description: "Terraform Vars, exemple : var1=test var2=test2"
+        required: false
 
 jobs:
   check:
@@ -115,6 +118,14 @@ jobs:
           if [ -n "${{ inputs.terraform_vars }}" ]
           then
             for vars in ${{ inputs.terraform_vars }}
+            do
+              echo "TF_VAR_$vars" >> $GITHUB_ENV
+            done
+          fi
+
+          if [ -n "${{ secrets.terraform_vars }}" ]
+          then
+            for vars in ${{ secrets.terraform_vars }}
             do
               echo "TF_VAR_$vars" >> $GITHUB_ENV
             done

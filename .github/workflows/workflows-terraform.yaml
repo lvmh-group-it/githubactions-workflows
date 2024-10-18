@@ -66,6 +66,9 @@ on:
         type: string
         description: kics queries exclusion
     secrets:
+      terraform_vars:
+        description: "Terraform Vars, exemple : var1=test var2=test2"
+        required: false
       infracost_api_key:
         description: "Infracost api key"
         required: true
@@ -241,6 +244,14 @@ jobs:
           if [ -n "${{ inputs.terraform_vars }}" ]
           then
             for vars in ${{ inputs.terraform_vars }}
+            do
+              echo "TF_VAR_$vars" >> $GITHUB_ENV
+            done
+          fi
+
+          if [ -n "${{ secrets.terraform_vars }}" ]
+          then
+            for vars in ${{ secrets.terraform_vars }}
             do
               echo "TF_VAR_$vars" >> $GITHUB_ENV
             done
