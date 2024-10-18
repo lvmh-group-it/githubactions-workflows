@@ -139,7 +139,7 @@ jobs:
     if: needs.setup.outputs.tf_dirs != '' && needs.setup.outputs.tf_dirs != '[]'
     strategy:
       matrix:
-        tf_dirs: ${{fromJson(needs.setup.outputs.tf_dirs)}}
+        tf_dirs: ${{ fromJson(needs.setup.outputs.tf_dirs) }}
     steps:
       - name: install tfenv
         run: |
@@ -163,7 +163,7 @@ jobs:
     if: needs.setup.outputs.live_tf_dirs != '' && needs.setup.outputs.live_tf_dirs != '[]'
     strategy:
       matrix:
-        tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
+        tf_dirs: ${{ fromJson(needs.setup.outputs.live_tf_dirs) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -201,7 +201,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
+        tf_dirs: ${{ fromJson(needs.setup.outputs.live_tf_dirs) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -216,7 +216,7 @@ jobs:
       - name: Setup terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: ${{ env.tf_version}}
+          terraform_version: ${{ env.tf_version }}
 
       # Authenticate On providers
       ## GCP
@@ -349,7 +349,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
+        tf_dirs: ${{ fromJson(needs.setup.outputs.live_tf_dirs) }}
     steps:
       - uses: actions/checkout@v3
       - name: pull LVMH queries
@@ -426,7 +426,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
+        tf_dirs: ${{ fromJson(needs.setup.outputs.live_tf_dirs) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -441,7 +441,7 @@ jobs:
       - name: Setup terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: ${{ env.tf_version}}
+          terraform_version: ${{ env.tf_version }}
 
       # Authenticate On providers
       ## GCP
@@ -492,7 +492,7 @@ jobs:
       LVMH_GITHUB_TOKEN: ${{ secrets.LVMH_GITHUB_TOKEN }}
     # strategy:
     #   matrix:
-    #     tf_dirs: ${{fromJson(needs.setup.outputs.live_tf_dirs)}}
+    #     tf_dirs: ${{ fromJson(needs.setup.outputs.live_tf_dirs) }}
     steps:
       - name: Setup Infracost
         uses: infracost/actions/setup@v2
@@ -546,8 +546,8 @@ jobs:
         run: |
           infracost comment github --path=/tmp/infracost.json \
                                    --repo=$GITHUB_REPOSITORY \
-                                   --github-token=${{github.token}} \
-                                   --pull-request=${{github.event.pull_request.number}} \
+                                   --github-token=${{ github.token }} \
+                                   --pull-request=${{ github.event.pull_request.number }} \
                                    --behavior=update
 
   #########################################################

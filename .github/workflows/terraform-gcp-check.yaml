@@ -62,7 +62,7 @@ jobs:
 
       - name: get tfenv version
         run: |
-          cd ${{ inputs.working_directory}}
+          cd ${{ inputs.working_directory }}
           echo "tf_version=$(~/.tfenv/bin/tfenv version-name)" >> $GITHUB_ENV
 
       - name: Setup terraform
@@ -87,7 +87,7 @@ jobs:
           # - remove the trailing /
           # - convert / to _
           # - remove duplicated _
-          deployment_name=$(echo "${{ inputs.working_directory}}" | sed -E "s|^terraform/(.+)$|\1|" | sed 's|/$||g' | sed 's|/|_|g' | sed 's|__+|_|g')
+          deployment_name=$(echo "${{ inputs.working_directory }}" | sed -E "s|^terraform/(.+)$|\1|" | sed 's|/$||g' | sed 's|/|_|g' | sed 's|__+|_|g')
 
           if [ -z "${{ inputs.artifact_name_prefix }}" ] ; then
             artifact_name_prefix=terraform-check-$(date +"%Y%m%d-%H%M%S")
@@ -107,7 +107,7 @@ jobs:
         id: tf_init
         run: |
           set -o pipefail
-          cd ${{ inputs.working_directory}}
+          cd ${{ inputs.working_directory }}
           terraform init -input=false -no-color | tee ${OUTPUT_DIR}/tf_init.log
 
       - name: Set custom terraform vars
@@ -123,7 +123,7 @@ jobs:
       - name: Generate terraform versions
         id: tf_version
         run: |
-          cd ${{ inputs.working_directory}}
+          cd ${{ inputs.working_directory }}
 
           # Show versions in step output
           terraform version
@@ -134,7 +134,7 @@ jobs:
       - name: Terraform plan
         id: tf_plan
         run: |
-          cd ${{ inputs.working_directory}}
+          cd ${{ inputs.working_directory }}
           # Generate plan
           terraform plan -input=false -no-color -out=${OUTPUT_DIR}/tf_plan | tee ${OUTPUT_DIR}/tf_plan.log
 
