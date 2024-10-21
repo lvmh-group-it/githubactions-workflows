@@ -73,16 +73,6 @@ jobs:
         with:
           terraform_version: ${{ env.tf_version }}
 
-      - name: Authenticate to Google Cloud
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: projects/${{ inputs.gcp_project_number }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-action-public
-          service_account: ${{ inputs.gcp_workload_identity_sac_name }}
-
-      - name: Configure git
-        run: git config --global url."https://oauth2:${{ secrets.LVMH_GITHUB_TOKEN }}@github.com".insteadOf https://github.com
-
       - name: Prepare variables
         run: |
           # Generate a deployment_name from the terraform working directory.
@@ -105,6 +95,16 @@ jobs:
           OUTPUT_DIR=$(mktemp -d /tmp/${ARTIFACT_NAME}.XXXXXX)
           echo "Using OUTPUT_DIR: ${OUTPUT_DIR}"
           echo "OUTPUT_DIR=${OUTPUT_DIR}" >> $GITHUB_ENV
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/${{ inputs.gcp_project_number }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-action-public
+          service_account: ${{ inputs.gcp_workload_identity_sac_name }}
+
+      - name: Configure git
+        run: git config --global url."https://oauth2:${{ secrets.LVMH_GITHUB_TOKEN }}@github.com".insteadOf https://github.com
 
       - name: Terraform init
         id: tf_init
