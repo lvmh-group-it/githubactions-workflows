@@ -159,10 +159,15 @@ jobs:
         id: summary
         if: success() || failure()
         run: |
-          echo "Extracting drifts:"
-          cat ${OUTPUT_DIR}/tf_plan.json | jq -r  '.resource_changes[] | select(any(.change.actions[]; IN("update","create","delete"))) | .address as $address | .change.actions[] | [., $address] | @csv' 
+          if [ -f ${OUTPUT_DIR}/tf_plan.json ] ; then
+            echo "Extracting drifts:"
+            cat ${OUTPUT_DIR}/tf_plan.json | jq -r  '.resource_changes[] | select(any(.change.actions[]; IN("update","create","delete"))) | .address as $address | .change.actions[] | [., $address] | @csv' 
 
-          tf_drift_counts=$(cat ${OUTPUT_DIR}/tf_plan.json | jq -r '.resource_changes[] | select(any(.change.actions[]; IN("update","create","delete"))) | .address as $address | .change.actions[] | [., $address] | @csv' | wc -l)
+            tf_drift_counts=$(cat ${OUTPUT_DIR}/tf_plan.json | jq -r '.resource_changes[] | select(any(.change.actions[]; IN("update","create","delete"))) | .address as $address | .change.actions[] | [., $address] | @csv' | wc -l)
+          else
+            echo "Plan not found, can't extract drifts"
+            tf_drift_counts=""
+          fi
 
           echo "Generating summary"
           cat <<EOF > ${OUTPUT_DIR}/summary.json
