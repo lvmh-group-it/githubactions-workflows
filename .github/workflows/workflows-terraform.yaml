@@ -96,13 +96,13 @@ jobs:
       working_directory: ${{ inputs.working_directory }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v35
+        uses: tj-actions/changed-files@v45
         if: github.event_name == 'pull_request'
         with:
           files: ${{ env.working_directory }}
@@ -149,7 +149,7 @@ jobs:
           git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
           echo "$HOME/.tfenv/bin" >> "$GITHUB_PATH"
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: fmt
         run: |
           cd ${{ matrix.tf_dirs }}
@@ -169,13 +169,13 @@ jobs:
         tf_dirs: ${{ fromJson(needs.setup.outputs.live_tf_dirs) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-      - uses: actions/cache@v3
+        uses: actions/checkout@v4
+      - uses: actions/cache@v4
         name: Cache plugin dir
         with:
           path: ~/.tflint.d/plugins
           key: tflint-${{ hashFiles('.tflint.hcl') }}
-      - uses: terraform-linters/setup-tflint@v2
+      - uses: terraform-linters/setup-tflint@v4
         name: Setup TFLint
         with:
           tflint_version: v0.43.0
@@ -207,7 +207,7 @@ jobs:
         tf_dirs: ${{ fromJson(needs.setup.outputs.live_tf_dirs) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: install tfenv
         run: |
           git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
@@ -217,7 +217,7 @@ jobs:
           echo "tf_version=$(~/.tfenv/bin/tfenv version-name)" >> $GITHUB_ENV
 
       - name: Setup terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.tf_version }}
 
@@ -225,7 +225,7 @@ jobs:
       ## GCP
       - name: Authenticate to Google Cloud
         id: auth
-        uses: google-github-actions/auth@v1
+        uses: google-github-actions/auth@v2
         if: inputs.terraform_cloud_provider == 'gcp'
         with:
           workload_identity_provider: projects/${{ inputs.gcp_project_number }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-action-public
@@ -290,7 +290,7 @@ jobs:
           plan_artifact_name=$(echo -n "tfplan ${{ matrix.tf_dirs }}" | sed -e 's/[^a-zA-Z0-9_-]/-/g' -e 's/--*/-/g')
           echo "PLAN_ARTIFACT_NAME=$plan_artifact_name" >> $GITHUB_ENV
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ env.PLAN_ARTIFACT_NAME }}
           path: /tmp/tfplan.json
@@ -307,9 +307,9 @@ jobs:
     needs: setup
     if: needs.setup.outputs.tf_dirs != '' && ! inputs.terraform_plan_enable
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: pull LVMH queries
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{ inputs.kics_custom_queries_repo }}
           token: ${{ secrets.LVMH_GITHUB_TOKEN }}
@@ -331,7 +331,7 @@ jobs:
           }
           EOF
       - name: run kics Scan
-        uses: checkmarx/kics-github-action@v1.7.0
+        uses: checkmarx/kics-github-action@v2.1.3
         continue-on-error: ${{ inputs.kics-ignore }}
         with:
           path: ${{ inputs.working_directory }}
@@ -362,9 +362,9 @@ jobs:
       matrix:
         tf_dirs: ${{ fromJson(needs.setup.outputs.live_tf_dirs) }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: pull LVMH queries
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{ inputs.kics_custom_queries_repo }}
           token: ${{ secrets.LVMH_GITHUB_TOKEN }}
@@ -377,7 +377,7 @@ jobs:
           plan_artifact_name=$(echo -n "tfplan ${{ matrix.tf_dirs }}" | sed -e 's/[^a-zA-Z0-9_-]/-/g' -e 's/--*/-/g')
           echo "PLAN_ARTIFACT_NAME=$plan_artifact_name" >> $GITHUB_ENV
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: ${{ env.PLAN_ARTIFACT_NAME }}
           path: plan
@@ -400,7 +400,7 @@ jobs:
           EOF
 
       - name: run kics Scan
-        uses: checkmarx/kics-github-action@v1.7.0
+        uses: checkmarx/kics-github-action@v2.1.3
         continue-on-error: ${{ inputs.kics-ignore }}
         with:
           path: "plan/tfplan.json"
@@ -440,7 +440,7 @@ jobs:
         tf_dirs: ${{ fromJson(needs.setup.outputs.live_tf_dirs) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: install tfenv
         run: |
           git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
@@ -450,7 +450,7 @@ jobs:
           echo "tf_version=$(~/.tfenv/bin/tfenv version-name)" >> $GITHUB_ENV
 
       - name: Setup terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.tf_version }}
 
@@ -458,7 +458,7 @@ jobs:
       ## GCP
       - name: Authenticate to Google Cloud
         id: auth
-        uses: google-github-actions/auth@v1
+        uses: google-github-actions/auth@v2
         if: inputs.terraform_cloud_provider == 'gcp'
         with:
           workload_identity_provider: projects/${{ inputs.gcp_project_number }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-action-public
@@ -506,7 +506,7 @@ jobs:
     #     tf_dirs: ${{ fromJson(needs.setup.outputs.live_tf_dirs) }}
     steps:
       - name: Setup Infracost
-        uses: infracost/actions/setup@v2
+        uses: infracost/actions/setup@v3
         # See https://github.com/infracost/actions/tree/master/setup for other inputs
         # If you can't use this action, see Docker images in https://infracost.io/cicd
         with:
@@ -518,7 +518,7 @@ jobs:
             --global url."https://$LVMH_GITHUB_TOKEN@github.com".insteadOf https://github.com
 
       - name: Checkout base branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: "${{ github.event.pull_request.base.ref }}"
 
@@ -532,7 +532,7 @@ jobs:
 
       # Checkout the current PR branch so we can create a diff.
       - name: Checkout PR branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Generate Infracost report
         run: |
@@ -583,7 +583,7 @@ jobs:
     steps:
       # Checkout the repository to the GitHub Actions runner
       - name: Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         if: env.WIZ_CLIENT_ID != null
 
       - name: Download Wiz-cli
